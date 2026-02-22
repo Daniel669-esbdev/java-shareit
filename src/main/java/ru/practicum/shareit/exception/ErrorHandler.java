@@ -36,6 +36,6 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Map<String, String> handleAll(Exception e) {
         log.error("500: ", e);
-        return Map.of("error", "Произошла непредвиденная ошибкаа");
+        return Map.of("error", "Произошла непредвиденная ошибка");
     }
 }

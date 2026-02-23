@@ -35,15 +35,21 @@ public class ItemServiceImpl implements ItemService {
     public ItemDto update(Long userId, Long itemId, ItemDto itemDto) {
         Item item = items.get(itemId);
         if (item == null) {
-            throw new NotFoundException("Вещь не найдена");
+            throw new NotFoundException("Вещь с id " + itemId + " не найдена");
         }
         if (!item.getOwner().getId().equals(userId)) {
             throw new NotFoundException("Редактировать вещь может только её владелец");
         }
 
-        if (itemDto.getName() != null) item.setName(itemDto.getName());
-        if (itemDto.getDescription() != null) item.setDescription(itemDto.getDescription());
-        if (itemDto.getAvailable() != null) item.setAvailable(itemDto.getAvailable());
+        if (itemDto.getName() != null && !itemDto.getName().isBlank()) {
+            item.setName(itemDto.getName());
+        }
+        if (itemDto.getDescription() != null && !itemDto.getDescription().isBlank()) {
+            item.setDescription(itemDto.getDescription());
+        }
+        if (itemDto.getAvailable() != null) {
+            item.setAvailable(itemDto.getAvailable());
+        }
 
         return ItemMapper.toItemDto(item);
     }
@@ -52,11 +58,13 @@ public class ItemServiceImpl implements ItemService {
     public ItemDto getById(Long itemId) {
         return Optional.ofNullable(items.get(itemId))
                 .map(ItemMapper::toItemDto)
-                .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
+                .orElseThrow(() -> new NotFoundException("Вещь с id " + itemId + " не найдена"));
     }
 
     @Override
     public List<ItemDto> getByOwner(Long userId) {
+        userService.getById(userId);
+
         return items.values().stream()
                 .filter(i -> i.getOwner().getId().equals(userId))
                 .map(ItemMapper::toItemDto)

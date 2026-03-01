@@ -20,6 +20,7 @@ import ru.practicum.shareit.user.UserService;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +56,7 @@ public class ItemServiceImpl implements ItemService {
                 .orElseThrow(() -> new NotFoundException("Вещь с id " + itemId + " не найдена"));
 
         if (!item.getOwner().getId().equals(userId)) {
-            log.error("Попытка редактирования чужой вещи: Item ID {}, User ID {}", itemId, userId);
+            log.error("Доступ запрещен: пользователь {} не владелец вещи {}", userId, itemId);
             throw new NotFoundException("Редактировать вещь может только её владелец");
         }
 
@@ -69,7 +70,6 @@ public class ItemServiceImpl implements ItemService {
             item.setAvailable(itemDto.getAvailable());
         }
 
-        log.info("Обновлена вещь ID {} пользователем ID {}", itemId, userId);
         return ItemMapper.toItemDto(item);
     }
 
@@ -86,7 +86,7 @@ public class ItemServiceImpl implements ItemService {
 
         if (item.getOwner().getId().equals(userId)) {
             List<Booking> bookings = bookingRepository.findAllByItemIdAndStatus(itemId,
-                    BookingStatus.APPROVED, Sort.by(Sort.Direction.DESC, "start"));
+                    BookingStatus.APPROVED, Sort.by(Sort.Direction.ASC, "start"));
             setBookings(itemDto, bookings);
         }
 
@@ -96,12 +96,12 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public List<ItemDto> getByOwner(Long userId) {
         userService.getById(userId);
-        List<Item> items = itemRepository.findAllByOwnerId(userId);
 
+        List<Item> items = itemRepository.findAllByOwnerId(userId);
         List<Long> itemIds = items.stream().map(Item::getId).collect(toList());
 
         Map<Long, List<Booking>> bookingsMap = bookingRepository.findAllByItemIdInAndStatus(itemIds,
-                        BookingStatus.APPROVED, Sort.by(Sort.Direction.DESC, "start"))
+                        BookingStatus.APPROVED, Sort.by(Sort.Direction.ASC, "start"))
                 .stream().collect(groupingBy(b -> b.getItem().getId()));
 
         Map<Long, List<Comment>> commentsMap = commentRepository.findAllByItemIdIn(itemIds)
@@ -110,8 +110,8 @@ public class ItemServiceImpl implements ItemService {
         return items.stream()
                 .map(item -> {
                     ItemDto dto = ItemMapper.toItemDto(item);
-                    setBookings(dto, bookingsMap.getOrDefault(item.getId(), new ArrayList<>()));
-                    dto.setComments(commentsMap.getOrDefault(item.getId(), new ArrayList<>()).stream()
+                    setBookings(dto, bookingsMap.getOrDefault(item.getId(), Collections.emptyList()));
+                    dto.setComments(commentsMap.getOrDefault(item.getId(), Collections.emptyList()).stream()
                             .map(CommentMapper::toCommentDto).collect(toList()));
                     return dto;
                 })
@@ -124,7 +124,6 @@ public class ItemServiceImpl implements ItemService {
         if (text == null || text.isBlank()) {
             return new ArrayList<>();
         }
-        log.info("Поиск вещей по тексту: {}", text);
         return itemRepository.search(text).stream()
                 .map(ItemMapper::toItemDto)
                 .collect(toList());
@@ -142,8 +141,7 @@ public class ItemServiceImpl implements ItemService {
                 userId, itemId, now, BookingStatus.APPROVED);
 
         if (!hasBooking) {
-            log.error("Пользователь {} не может оставить комментарий к вещи {}", userId, itemId);
-            throw new ValidationException("Вы не можете оставить комментарий к этой вещи (аренда не завершена или не существует)");
+            throw new ValidationException("Комментарий можно оставить только после завершения аренды");
         }
 
         User author = UserMapper.toUser(userService.getById(userId));
@@ -165,7 +163,7 @@ public class ItemServiceImpl implements ItemService {
 
         Booking lastBooking = bookings.stream()
                 .filter(b -> !b.getStart().isAfter(now))
-                .findFirst()
+                .max(Comparator.comparing(Booking::getStart))
                 .orElse(null);
 
         Booking nextBooking = bookings.stream()

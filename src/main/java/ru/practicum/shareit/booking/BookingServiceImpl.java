@@ -60,7 +60,7 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() -> new NotFoundException("Бронирование не найдено"));
 
         if (!booking.getItem().getOwner().getId().equals(userId)) {
-            throw new NotFoundException("Доступ запрещен");
+            throw new NotFoundException("Подтвердить бронирование может только владелец вещи");
         }
         if (booking.getStatus() != BookingStatus.WAITING) {
             throw new ValidationException("Статус уже изменен");
@@ -76,7 +76,7 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() -> new NotFoundException("Бронирование не найдено"));
 
         if (!booking.getBooker().getId().equals(userId) && !booking.getItem().getOwner().getId().equals(userId)) {
-            throw new NotFoundException("Доступ запрещен");
+            throw new NotFoundException("Просматривать бронирование может только автор или владелец вещи");
         }
         return BookingMapper.toBookingDto(booking);
     }
@@ -146,14 +146,11 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private void validateDates(BookingDto dto) {
-        if (dto.getStart() == null || dto.getEnd() == null) {
-            throw new ValidationException("Даты не указаны");
-        }
         if (dto.getStart().isBefore(LocalDateTime.now())) {
-            throw new ValidationException("Начало в прошлом");
+            throw new ValidationException("Дата начала не может быть в прошлом");
         }
         if (dto.getEnd().isBefore(dto.getStart()) || dto.getEnd().isEqual(dto.getStart())) {
-            throw new ValidationException("Неверный конец бронирования");
+            throw new ValidationException("Дата окончания должна быть после даты начала");
         }
     }
 }

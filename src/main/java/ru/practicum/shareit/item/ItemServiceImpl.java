@@ -19,11 +19,7 @@ import ru.practicum.shareit.user.UserMapper;
 import ru.practicum.shareit.user.UserService;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
@@ -44,20 +40,17 @@ public class ItemServiceImpl implements ItemService {
         User owner = UserMapper.toUser(userService.getById(userId));
         Item item = ItemMapper.toItem(itemDto);
         item.setOwner(owner);
-        Item savedItem = itemRepository.save(item);
-        log.info("Создана вещь ID {} для пользователя ID {}", savedItem.getId(), userId);
-        return ItemMapper.toItemDto(savedItem);
+        return ItemMapper.toItemDto(itemRepository.save(item));
     }
 
     @Override
     @Transactional
     public ItemDto update(Long userId, Long itemId, ItemDto itemDto) {
         Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new NotFoundException("Вещь с id " + itemId + " не найдена"));
+                .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
 
         if (!item.getOwner().getId().equals(userId)) {
-            log.error("Доступ запрещен: пользователь {} не владелец вещи {}", userId, itemId);
-            throw new NotFoundException("Редактировать вещь может только её владелец");
+            throw new NotFoundException("Редактировать вещь может только владелец");
         }
 
         if (itemDto.getName() != null && !itemDto.getName().isBlank()) {
@@ -76,13 +69,11 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemDto getById(Long itemId, Long userId) {
         Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new NotFoundException("Вещь с id " + itemId + " не найдена"));
+                .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
 
         ItemDto itemDto = ItemMapper.toItemDto(item);
-
         itemDto.setComments(commentRepository.findAllByItemId(itemId).stream()
-                .map(CommentMapper::toCommentDto)
-                .collect(toList()));
+                .map(CommentMapper::toCommentDto).collect(toList()));
 
         if (item.getOwner().getId().equals(userId)) {
             List<Booking> bookings = bookingRepository.findAllByItemIdAndStatus(itemId,
@@ -96,7 +87,6 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public List<ItemDto> getByOwner(Long userId) {
         userService.getById(userId);
-
         List<Item> items = itemRepository.findAllByOwnerId(userId);
         List<Long> itemIds = items.stream().map(Item::getId).collect(toList());
 
@@ -122,26 +112,21 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public List<ItemDto> search(String text) {
         if (text == null || text.isBlank()) {
-            return new ArrayList<>();
+            return Collections.emptyList();
         }
         return itemRepository.search(text).stream()
-                .map(ItemMapper::toItemDto)
-                .collect(toList());
+                .map(ItemMapper::toItemDto).collect(toList());
     }
 
     @Override
     @Transactional
     public CommentDto createComment(Long userId, Long itemId, CommentDto commentDto) {
-        if (commentDto.getText() == null || commentDto.getText().isBlank()) {
-            throw new ValidationException("Текст комментария не может быть пустым");
-        }
-
         LocalDateTime now = LocalDateTime.now();
         boolean hasBooking = bookingRepository.existsByBookerIdAndItemIdAndEndBeforeAndStatus(
                 userId, itemId, now, BookingStatus.APPROVED);
 
         if (!hasBooking) {
-            throw new ValidationException("Комментарий можно оставить только после завершения аренды");
+            throw new ValidationException("Нельзя оставить отзыв без завершенного бронирования");
         }
 
         User author = UserMapper.toUser(userService.getById(userId));
@@ -163,12 +148,12 @@ public class ItemServiceImpl implements ItemService {
 
         Booking lastBooking = bookings.stream()
                 .filter(b -> !b.getStart().isAfter(now))
-                .max(Comparator.comparing(Booking::getStart))
+                .reduce((first, second) -> second)
                 .orElse(null);
 
         Booking nextBooking = bookings.stream()
                 .filter(b -> b.getStart().isAfter(now))
-                .min(Comparator.comparing(Booking::getStart))
+                .findFirst()
                 .orElse(null);
 
         if (lastBooking != null) {

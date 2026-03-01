@@ -3,7 +3,10 @@ package ru.practicum.shareit.exception;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.MissingRequestHeaderException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Map;
 
@@ -11,31 +14,45 @@ import java.util.Map;
 @RestControllerAdvice
 public class ErrorHandler {
 
-    @ExceptionHandler(NotFoundException.class)
+    @ExceptionHandler
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public Map<String, String> handleNotFound(NotFoundException e) {
+    public Map<String, String> handleNotFound(final NotFoundException e) {
         log.error("404: {}", e.getMessage());
         return Map.of("error", e.getMessage());
     }
 
-    @ExceptionHandler(ConflictException.class)
+    @ExceptionHandler
     @ResponseStatus(HttpStatus.CONFLICT)
-    public Map<String, String> handleConflict(ConflictException e) {
+    public Map<String, String> handleConflict(final ConflictException e) {
         log.error("409: {}", e.getMessage());
         return Map.of("error", e.getMessage());
     }
 
-    @ExceptionHandler({ValidationException.class, MethodArgumentNotValidException.class})
+    @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Map<String, String> handleValidation(Exception e) {
+    public Map<String, String> handleValidation(final ValidationException e) {
         log.error("400: {}", e.getMessage());
+        return Map.of("error", e.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleMethodArgumentNotValid(final MethodArgumentNotValidException e) {
+        log.error("400: Ошибка валидации аннотации");
         return Map.of("error", "Ошибка валидации данных");
     }
 
-    @ExceptionHandler(Exception.class)
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleMissingHeader(final MissingRequestHeaderException e) {
+        log.error("400: Отсутствует заголовок X-Sharer-User-Id");
+        return Map.of("error", e.getMessage());
+    }
+
+    @ExceptionHandler
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public Map<String, String> handleAll(Exception e) {
+    public Map<String, String> handleThrowable(final Throwable e) {
         log.error("500: ", e);
-        return Map.of("error", "Произошла непредвиденная ошибкаа");
+        return Map.of("error", "Произошла непредвиденная ошибка");
     }
 }

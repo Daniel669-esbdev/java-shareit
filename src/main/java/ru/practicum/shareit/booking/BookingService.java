@@ -4,13 +4,13 @@ import ru.practicum.shareit.booking.dto.BookingDto;
 import java.util.List;
 
 public interface BookingService {
-    Booking create(Long userId, BookingDto bookingDto);
+    BookingDto create(Long userId, BookingDto bookingDto);
 
-    Booking approve(Long userId, Long bookingId, Boolean approved);
+    BookingDto approve(Long userId, Long bookingId, Boolean approved);
 
-    Booking getById(Long userId, Long bookingId);
+    BookingDto getById(Long userId, Long bookingId);
 
-    List<Booking> getAllByBooker(Long userId, String state);
+    List<BookingDto> getAllByBooker(Long userId, String state);
 
-    List<Booking> getAllByOwner(Long userId, String state);
+    List<BookingDto> getAllByOwner(Long userId, String state);
 }

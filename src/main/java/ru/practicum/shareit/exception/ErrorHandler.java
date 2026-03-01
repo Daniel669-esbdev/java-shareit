@@ -7,6 +7,7 @@ import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.Map;
 
@@ -40,6 +41,18 @@ public class ErrorHandler {
     public Map<String, String> handleMethodArgumentNotValid(final MethodArgumentNotValidException e) {
         log.error("400: Ошибка валидации аннотации");
         return Map.of("error", "Ошибка валидации данных");
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleUnknownState(final MethodArgumentTypeMismatchException e) {
+        if ("state".equals(e.getName())) {
+            String value = e.getValue() != null ? e.getValue().toString() : "UNKNOWN";
+            log.error("400: Некорректный статус бронирования: {}", value);
+            return Map.of("error", "Unknown state: " + value);
+        }
+        log.error("400: Ошибка в параметре {}: {}", e.getName(), e.getMessage());
+        return Map.of("error", e.getMessage());
     }
 
     @ExceptionHandler

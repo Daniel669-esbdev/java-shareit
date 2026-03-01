@@ -44,7 +44,7 @@ public class ItemServiceImpl implements ItemService {
         Item item = ItemMapper.toItem(itemDto);
         item.setOwner(owner);
         Item savedItem = itemRepository.save(item);
-        log.info("Created item ID {} for user ID {}", savedItem.getId(), userId);
+        log.info("Создана вещь ID {} для пользователя ID {}", savedItem.getId(), userId);
         return ItemMapper.toItemDto(savedItem);
     }
 
@@ -55,7 +55,7 @@ public class ItemServiceImpl implements ItemService {
                 .orElseThrow(() -> new NotFoundException("Вещь с id " + itemId + " не найдена"));
 
         if (!item.getOwner().getId().equals(userId)) {
-            log.error("Unauthorized update attempt: Item ID {}, User ID {}", itemId, userId);
+            log.error("Попытка редактирования чужой вещи: Item ID {}, User ID {}", itemId, userId);
             throw new NotFoundException("Редактировать вещь может только её владелец");
         }
 
@@ -69,7 +69,7 @@ public class ItemServiceImpl implements ItemService {
             item.setAvailable(itemDto.getAvailable());
         }
 
-        log.info("Updated item ID {} by user ID {}", itemId, userId);
+        log.info("Обновлена вещь ID {} пользователем ID {}", itemId, userId);
         return ItemMapper.toItemDto(item);
     }
 
@@ -85,8 +85,9 @@ public class ItemServiceImpl implements ItemService {
                 .collect(toList()));
 
         if (item.getOwner().getId().equals(userId)) {
-            setBookings(itemDto, bookingRepository.findAllByItemIdAndStatus(itemId,
-                    BookingStatus.APPROVED, Sort.by(Sort.Direction.DESC, "start")));
+            List<Booking> bookings = bookingRepository.findAllByItemIdAndStatus(itemId,
+                    BookingStatus.APPROVED, Sort.by(Sort.Direction.DESC, "start"));
+            setBookings(itemDto, bookings);
         }
 
         return itemDto;
@@ -123,7 +124,7 @@ public class ItemServiceImpl implements ItemService {
         if (text == null || text.isBlank()) {
             return new ArrayList<>();
         }
-        log.info("Searching items by text: {}", text);
+        log.info("Поиск вещей по тексту: {}", text);
         return itemRepository.search(text).stream()
                 .map(ItemMapper::toItemDto)
                 .collect(toList());
@@ -132,7 +133,7 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public CommentDto createComment(Long userId, Long itemId, CommentDto commentDto) {
-        if (commentDto.getText().isBlank()) {
+        if (commentDto.getText() == null || commentDto.getText().isBlank()) {
             throw new ValidationException("Текст комментария не может быть пустым");
         }
 
@@ -141,7 +142,8 @@ public class ItemServiceImpl implements ItemService {
                 userId, itemId, now, BookingStatus.APPROVED);
 
         if (!hasBooking) {
-            throw new ValidationException("Ошибка валидации комментария");
+            log.error("Пользователь {} не может оставить комментарий к вещи {}", userId, itemId);
+            throw new ValidationException("Вы не можете оставить комментарий к этой вещи (аренда не завершена или не существует)");
         }
 
         User author = UserMapper.toUser(userService.getById(userId));
@@ -168,7 +170,7 @@ public class ItemServiceImpl implements ItemService {
 
         Booking nextBooking = bookings.stream()
                 .filter(b -> b.getStart().isAfter(now))
-                .reduce((first, second) -> second)
+                .min(Comparator.comparing(Booking::getStart))
                 .orElse(null);
 
         if (lastBooking != null) {

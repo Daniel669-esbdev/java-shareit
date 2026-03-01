@@ -71,6 +71,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public BookingDto getById(Long userId, Long bookingId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new NotFoundException("Бронирование не найдено"));
@@ -82,6 +83,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<BookingDto> getAllByBooker(Long userId, String state) {
         userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Пользователь не найден"));
         LocalDateTime now = LocalDateTime.now();
@@ -114,6 +116,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<BookingDto> getAllByOwner(Long userId, String state) {
         userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Пользователь не найден"));
         LocalDateTime now = LocalDateTime.now();
@@ -148,13 +151,13 @@ public class BookingServiceImpl implements BookingService {
     private void validateDates(BookingDto dto) {
         LocalDateTime now = LocalDateTime.now();
         if (dto.getStart() == null || dto.getEnd() == null) {
-            throw new ValidationException("Даты не могут быть пустыми");
+            throw new ValidationException("Даты обязательны");
         }
-        if (dto.getStart().isBefore(now)) {
-            throw new ValidationException("Начало не может быть в прошлом");
+        if (dto.getStart().isBefore(now.minusSeconds(1))) {
+            throw new ValidationException("Некорректное начало");
         }
         if (dto.getEnd().isBefore(dto.getStart()) || dto.getEnd().isEqual(dto.getStart())) {
-            throw new ValidationException("Конец должен быть после начала");
+            throw new ValidationException("Некорректное окончание");
         }
     }
 }

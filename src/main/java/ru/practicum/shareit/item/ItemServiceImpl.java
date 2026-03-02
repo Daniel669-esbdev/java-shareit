@@ -37,7 +37,7 @@ public class ItemServiceImpl implements ItemService {
     @Transactional
     public ItemDto create(Long userId, ItemDto itemDto) {
         User owner = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь с id " + userId + " не найден"));
+                .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
         Item item = ItemMapper.toItem(itemDto);
         item.setOwner(owner);
         return ItemMapper.toItemDto(itemRepository.save(item));
@@ -47,10 +47,10 @@ public class ItemServiceImpl implements ItemService {
     @Transactional
     public ItemDto update(Long userId, Long itemId, ItemDto itemDto) {
         Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new NotFoundException("Вещь с id " + itemId + " не найдена"));
+                .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
 
         if (!item.getOwner().getId().equals(userId)) {
-            throw new NotFoundException("Редактировать вещь может только её владелец");
+            throw new NotFoundException("Доступ запрещен");
         }
 
         if (itemDto.getName() != null && !itemDto.getName().isBlank()) {
@@ -69,7 +69,7 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemDto getById(Long itemId, Long userId) {
         Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new NotFoundException("Вещь с id " + itemId + " не найдена"));
+                .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
 
         ItemDto itemDto = ItemMapper.toItemDto(item);
 
@@ -88,8 +88,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public List<ItemDto> getByOwner(Long userId) {
-        userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
+        userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Пользователь не найден"));
 
         List<Item> items = itemRepository.findAllByOwnerId(userId);
         List<Long> itemIds = items.stream().map(Item::getId).collect(toList());
@@ -126,22 +125,19 @@ public class ItemServiceImpl implements ItemService {
     @Transactional
     public CommentDto createComment(Long userId, Long itemId, CommentDto commentDto) {
         if (commentDto.getText() == null || commentDto.getText().isBlank()) {
-            throw new ValidationException("Текст комментария не может быть пустым");
+            throw new ValidationException("Текст пуст");
         }
 
         LocalDateTime now = LocalDateTime.now();
-
         boolean hasBooking = bookingRepository.existsByBookerIdAndItemIdAndEndBeforeAndStatus(
                 userId, itemId, now, BookingStatus.APPROVED);
 
         if (!hasBooking) {
-            throw new ValidationException("Пользователь не арендовал эту вещь или аренда еще не завершена");
+            throw new ValidationException("Аренда не найдена");
         }
 
-        User author = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
-        Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
+        User author = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User not found"));
+        Item item = itemRepository.findById(itemId).orElseThrow(() -> new NotFoundException("Item not found"));
 
         Comment comment = Comment.builder()
                 .text(commentDto.getText())
@@ -158,12 +154,12 @@ public class ItemServiceImpl implements ItemService {
 
         Booking lastBooking = bookings.stream()
                 .filter(b -> !b.getStart().isAfter(now))
-                .reduce((first, second) -> second)
+                .max(Comparator.comparing(Booking::getStart))
                 .orElse(null);
 
         Booking nextBooking = bookings.stream()
                 .filter(b -> b.getStart().isAfter(now))
-                .findFirst()
+                .min(Comparator.comparing(Booking::getStart))
                 .orElse(null);
 
         if (lastBooking != null) {

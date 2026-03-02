@@ -54,7 +54,7 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = getBooking(bookingId);
 
         if (!booking.getItem().getOwner().getId().equals(userId)) {
-            throw new ValidationException("Подтвердить бронирование может только владелец вещи");
+            throw new NotFoundException("Подтвердить бронирование может только владелец вещи");
         }
         if (booking.getStatus() != BookingStatus.WAITING) {
             throw new ValidationException("Статус уже изменен");
@@ -155,7 +155,7 @@ public class BookingServiceImpl implements BookingService {
 
     private void validateDates(BookingDto dto) {
         LocalDateTime now = LocalDateTime.now();
-        if (dto.getStart().isBefore(now)) {
+        if (dto.getStart().isBefore(now.minusSeconds(1))) {
             throw new ValidationException("Дата начала не может быть в прошлом");
         }
         if (dto.getEnd().isBefore(dto.getStart()) || dto.getEnd().isEqual(dto.getStart())) {

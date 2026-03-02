@@ -29,26 +29,21 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public BookingDto create(Long userId, BookingDto bookingDto) {
-        User booker = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
-        Item item = itemRepository.findById(bookingDto.getItemId())
-                .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
+        User booker = getUser(userId);
+        Item item = getItem(bookingDto.getItemId());
 
         if (!item.getAvailable()) {
-            throw new ValidationException("Вещь недоступна");
+            throw new ValidationException("Вещь с id=" + item.getId() + " недоступна");
         }
         if (item.getOwner().getId().equals(userId)) {
             throw new NotFoundException("Владелец не может забронировать свою вещь");
         }
         validateDates(bookingDto);
 
-        Booking booking = Booking.builder()
-                .start(bookingDto.getStart())
-                .end(bookingDto.getEnd())
-                .item(item)
-                .booker(booker)
-                .status(BookingStatus.WAITING)
-                .build();
+        Booking booking = BookingMapper.toBooking(bookingDto);
+        booking.setItem(item);
+        booking.setBooker(booker);
+        booking.setStatus(BookingStatus.WAITING);
 
         return BookingMapper.toBookingDto(bookingRepository.save(booking));
     }
@@ -56,11 +51,10 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public BookingDto approve(Long userId, Long bookingId, Boolean approved) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new NotFoundException("Бронирование не найдено"));
+        Booking booking = getBooking(bookingId);
 
         if (!booking.getItem().getOwner().getId().equals(userId)) {
-            throw new ValidationException("Подтвердить может только владелец вещи");
+            throw new NotFoundException("Подтвердить может только владелец вещи");
         }
         if (booking.getStatus() != BookingStatus.WAITING) {
             throw new ValidationException("Статус уже изменен");
@@ -72,18 +66,17 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public BookingDto getById(Long userId, Long bookingId) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new NotFoundException("Бронирование не найдено"));
+        Booking booking = getBooking(bookingId);
 
-        if (!booking.getBooker().getId().equals(userId) && !booking.getItem().getOwner().getId().equals(userId)) {
-            throw new NotFoundException("Доступ запрещен");
+        if (!(booking.getBooker().getId().equals(userId) || booking.getItem().getOwner().getId().equals(userId))) {
+            throw new NotFoundException("Доступ запрещен для пользователя с id=" + userId);
         }
         return BookingMapper.toBookingDto(booking);
     }
 
     @Override
     public List<BookingDto> getAllByBooker(Long userId, String state) {
-        userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Пользователь не найден"));
+        getUser(userId);
         LocalDateTime now = LocalDateTime.now();
         Sort sort = Sort.by(Sort.Direction.DESC, "start");
 
@@ -115,7 +108,7 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public List<BookingDto> getAllByOwner(Long userId, String state) {
-        userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Пользователь не найден"));
+        getUser(userId);
         LocalDateTime now = LocalDateTime.now();
         Sort sort = Sort.by(Sort.Direction.DESC, "start");
 
@@ -145,16 +138,28 @@ public class BookingServiceImpl implements BookingService {
         return bookings.stream().map(BookingMapper::toBookingDto).collect(Collectors.toList());
     }
 
+    private User getUser(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Пользователь с id=" + userId + " не найден"));
+    }
+
+    private Item getItem(Long itemId) {
+        return itemRepository.findById(itemId)
+                .orElseThrow(() -> new NotFoundException("Вещь с id=" + itemId + " не найдена"));
+    }
+
+    private Booking getBooking(Long bookingId) {
+        return bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new NotFoundException("Бронирование с id=" + bookingId + " не найдено"));
+    }
+
     private void validateDates(BookingDto dto) {
         LocalDateTime now = LocalDateTime.now();
-        if (dto.getStart() == null || dto.getEnd() == null) {
-            throw new ValidationException("Даты обязательны");
-        }
         if (dto.getStart().isBefore(now)) {
-            throw new ValidationException("Некорректное начало");
+            throw new ValidationException("Дата начала не может быть в прошлом");
         }
         if (dto.getEnd().isBefore(dto.getStart()) || dto.getEnd().isEqual(dto.getStart())) {
-            throw new ValidationException("Некорректное окончание");
+            throw new ValidationException("Дата окончания должна быть после даты начала");
         }
     }
 }

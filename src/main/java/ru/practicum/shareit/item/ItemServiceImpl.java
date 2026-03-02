@@ -36,8 +36,7 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public ItemDto create(Long userId, ItemDto itemDto) {
-        User owner = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
+        User owner = getUser(userId);
         Item item = ItemMapper.toItem(itemDto);
         item.setOwner(owner);
         return ItemMapper.toItemDto(itemRepository.save(item));
@@ -46,11 +45,10 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public ItemDto update(Long userId, Long itemId, ItemDto itemDto) {
-        Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
+        Item item = getItem(itemId);
 
         if (!item.getOwner().getId().equals(userId)) {
-            throw new NotFoundException("Доступ запрещен");
+            throw new NotFoundException("Вещь с id=" + itemId + " не принадлежит пользователю с id=" + userId);
         }
 
         if (itemDto.getName() != null && !itemDto.getName().isBlank()) {
@@ -68,9 +66,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public ItemDto getById(Long itemId, Long userId) {
-        Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
-
+        Item item = getItem(itemId);
         ItemDto itemDto = ItemMapper.toItemDto(item);
 
         itemDto.setComments(commentRepository.findAllByItemId(itemId).stream()
@@ -78,8 +74,8 @@ public class ItemServiceImpl implements ItemService {
                 .collect(toList()));
 
         if (item.getOwner().getId().equals(userId)) {
-            List<Booking> bookings = bookingRepository.findAllByItemIdAndStatus(itemId,
-                    BookingStatus.APPROVED, Sort.by(Sort.Direction.ASC, "start"));
+            List<Booking> bookings = bookingRepository.findAllByItemIdAndStatusNot(itemId,
+                    BookingStatus.REJECTED, Sort.by(Sort.Direction.ASC, "start"));
             setBookings(itemDto, bookings);
         }
 
@@ -88,13 +84,12 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public List<ItemDto> getByOwner(Long userId) {
-        userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Пользователь не найден"));
-
+        getUser(userId);
         List<Item> items = itemRepository.findAllByOwnerId(userId);
         List<Long> itemIds = items.stream().map(Item::getId).collect(toList());
 
-        Map<Long, List<Booking>> bookingsMap = bookingRepository.findAllByItemIdInAndStatus(itemIds,
-                        BookingStatus.APPROVED, Sort.by(Sort.Direction.ASC, "start"))
+        Map<Long, List<Booking>> bookingsMap = bookingRepository.findAllByItemIdInAndStatusNot(itemIds,
+                        BookingStatus.REJECTED, Sort.by(Sort.Direction.ASC, "start"))
                 .stream().collect(groupingBy(b -> b.getItem().getId()));
 
         Map<Long, List<Comment>> commentsMap = commentRepository.findAllByItemIdIn(itemIds)
@@ -124,29 +119,33 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public CommentDto createComment(Long userId, Long itemId, CommentDto commentDto) {
-        if (commentDto.getText() == null || commentDto.getText().isBlank()) {
-            throw new ValidationException("Текст пуст");
-        }
-
         LocalDateTime now = LocalDateTime.now();
         boolean hasBooking = bookingRepository.existsByBookerIdAndItemIdAndEndBeforeAndStatus(
                 userId, itemId, now, BookingStatus.APPROVED);
 
         if (!hasBooking) {
-            throw new ValidationException("Аренда не найдена");
+            throw new ValidationException("Пользователь с id=" + userId + " не брал в аренду вещь с id=" + itemId);
         }
 
-        User author = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User not found"));
-        Item item = itemRepository.findById(itemId).orElseThrow(() -> new NotFoundException("Item not found"));
+        User author = getUser(userId);
+        Item item = getItem(itemId);
 
-        Comment comment = Comment.builder()
-                .text(commentDto.getText())
-                .item(item)
-                .author(author)
-                .created(now)
-                .build();
+        Comment comment = CommentMapper.toComment(commentDto);
+        comment.setItem(item);
+        comment.setAuthor(author);
+        comment.setCreated(now);
 
         return CommentMapper.toCommentDto(commentRepository.save(comment));
+    }
+
+    private User getUser(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Пользователь с id=" + userId + " не найден"));
+    }
+
+    private Item getItem(Long itemId) {
+        return itemRepository.findById(itemId)
+                .orElseThrow(() -> new NotFoundException("Вещь с id=" + itemId + " не найдена"));
     }
 
     private void setBookings(ItemDto itemDto, List<Booking> bookings) {
@@ -154,12 +153,12 @@ public class ItemServiceImpl implements ItemService {
 
         Booking lastBooking = bookings.stream()
                 .filter(b -> !b.getStart().isAfter(now))
-                .max(Comparator.comparing(Booking::getStart))
+                .reduce((first, second) -> second)
                 .orElse(null);
 
         Booking nextBooking = bookings.stream()
                 .filter(b -> b.getStart().isAfter(now))
-                .min(Comparator.comparing(Booking::getStart))
+                .findFirst()
                 .orElse(null);
 
         if (lastBooking != null) {

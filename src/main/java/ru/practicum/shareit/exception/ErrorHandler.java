@@ -49,7 +49,8 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleMethodArgumentNotValid(final MethodArgumentNotValidException e) {
         log.error("400 Validation Error: {}", e.getMessage());
-        return Map.of("error", "Ошибка валидации данных");
+        String message = e.getBindingResult().getAllErrors().get(0).getDefaultMessage();
+        return Map.of("error", message != null ? message : "Ошибка валидации данных");
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
@@ -68,13 +69,16 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleMissingHeader(final MissingRequestHeaderException e) {
         log.error("400 Missing Header: {}", e.getMessage());
-        return Map.of("error", e.getMessage());
+        return Map.of("error", "Отсутствует обязательный заголовок: " + e.getHeaderName());
     }
 
     @ExceptionHandler(Throwable.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Map<String, String> handleThrowable(final Throwable e) {
         log.error("500 Internal Server Error: ", e);
-        return Map.of("error", "Произошла непредвиденная ошибка: " + e.getMessage());
+        return Map.of(
+                "error", "Произошла непредвиденная ошибка",
+                "message", e.getMessage() != null ? e.getMessage() : "Нет описания"
+        );
     }
 }

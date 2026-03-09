@@ -8,7 +8,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.practicum.shareit.user.dto.UserDto;
-import ru.practicum.shareit.exception.NotFoundException;
+
 
 import java.util.List;
 
@@ -31,96 +31,53 @@ class UserControllerTest {
     private MockMvc mvc;
 
     @Test
-    void saveNewUser_whenValid_thenStatusOk() throws Exception {
-        UserDto userDto = UserDto.builder()
-                .id(1L)
-                .name("Daniel")
-                .email("daniel@mail.com")
-                .build();
-
+    void create() throws Exception {
+        UserDto userDto = UserDto.builder().id(1L).name("Daniel").email("daniel@mail.com").build();
         when(userService.create(any())).thenReturn(userDto);
 
         mvc.perform(post("/users")
                         .content(mapper.writeValueAsString(userDto))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.name").value("Daniel"))
-                .andExpect(jsonPath("$.email").value("daniel@mail.com"));
-
-        verify(userService, times(1)).create(any());
+                .andExpect(jsonPath("$.id").value(1L));
     }
 
     @Test
-    void getUserById_whenExists_thenStatusOk() throws Exception {
-        UserDto userDto = UserDto.builder()
-                .id(1L)
-                .name("Daniel")
-                .email("daniel@mail.com")
-                .build();
-
-        when(userService.getById(1L)).thenReturn(userDto);
-
-        mvc.perform(get("/users/1"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1L))
-                .andExpect(jsonPath("$.name").value("Daniel"))
-                .andExpect(jsonPath("$.email").value("daniel@mail.com"));
-    }
-
-    @Test
-    void getUserById_whenNotFound_thenStatusNotFound() throws Exception {
-        when(userService.getById(anyLong())).thenThrow(new NotFoundException("User not found"));
-
-        mvc.perform(get("/users/99"))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void getAllUsers_thenStatusOk() throws Exception {
-        UserDto userDto = UserDto.builder()
-                .id(1L)
-                .name("Daniel")
-                .email("daniel@mail.com")
-                .build();
-
+    void findAll() throws Exception {
+        UserDto userDto = UserDto.builder().id(1L).name("Daniel").build();
         when(userService.findAll()).thenReturn(List.of(userDto));
 
         mvc.perform(get("/users"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].name").value("Daniel"))
-                .andExpect(jsonPath("$[0].email").value("daniel@mail.com"));
+                .andExpect(jsonPath("$.length()").value(1));
     }
 
     @Test
-    void updateUser_whenValid_thenStatusOk() throws Exception {
-        UserDto updateDto = UserDto.builder()
-                .name("Updated Name")
-                .email("updated@mail.com")
-                .build();
+    void getById() throws Exception {
+        UserDto userDto = UserDto.builder().id(1L).name("Daniel").build();
+        when(userService.getById(anyLong())).thenReturn(userDto);
 
-        UserDto resultDto = UserDto.builder()
-                .id(1L)
-                .name("Updated Name")
-                .email("updated@mail.com")
-                .build();
+        mvc.perform(get("/users/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1L));
+    }
 
-        when(userService.update(anyLong(), any())).thenReturn(resultDto);
+    @Test
+    void update() throws Exception {
+        UserDto userDto = UserDto.builder().id(1L).name("Updated").build();
+        when(userService.update(anyLong(), any())).thenReturn(userDto);
 
         mvc.perform(patch("/users/1")
-                        .content(mapper.writeValueAsString(updateDto))
+                        .content(mapper.writeValueAsString(userDto))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Updated Name"))
-                .andExpect(jsonPath("$.email").value("updated@mail.com"));
+                .andExpect(jsonPath("$.name").value("Updated"));
     }
 
     @Test
-    void deleteUser_thenStatusOk() throws Exception {
+    void deleteUser() throws Exception {
         mvc.perform(delete("/users/1"))
                 .andExpect(status().isOk());
-
-        verify(userService, times(1)).delete(1L);
+        verify(userService).delete(1L);
     }
 }

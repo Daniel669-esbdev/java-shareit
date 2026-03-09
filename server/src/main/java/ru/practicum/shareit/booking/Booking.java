@@ -3,7 +3,7 @@ package ru.practicum.shareit.booking;
 import jakarta.persistence.*;
 import lombok.*;
 import ru.practicum.shareit.item.model.Item;
-import ru.practicum.shareit.user.User; //
+import ru.practicum.shareit.user.User;
 
 import java.time.LocalDateTime;
 

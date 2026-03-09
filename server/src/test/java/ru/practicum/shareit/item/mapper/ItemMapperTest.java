@@ -18,7 +18,7 @@ class ItemMapperTest {
         Item item = Item.builder()
                 .id(1L)
                 .name("Ноутбук")
-                .description("Игровой")
+                .description("Мощный")
                 .available(true)
                 .owner(owner)
                 .request(request)
@@ -28,8 +28,8 @@ class ItemMapperTest {
 
         assertThat(dto).isNotNull();
         assertThat(dto.getId()).isEqualTo(item.getId());
-        assertThat(dto.getName()).isEqualTo(item.getName());
-        assertThat(dto.getDescription()).isEqualTo(item.getDescription());
+        assertThat(dto.getName()).isEqualTo("Ноутбук");
+        assertThat(dto.getDescription()).isEqualTo("Мощный");
         assertThat(dto.getAvailable()).isTrue();
         assertThat(dto.getRequestId()).isEqualTo(10L);
     }
@@ -38,16 +38,16 @@ class ItemMapperTest {
     void toItem() {
         ItemDto dto = ItemDto.builder()
                 .id(1L)
-                .name("Ноутбук")
-                .description("Игровой")
+                .name("Телефон")
+                .description("Рабочий")
                 .available(false)
                 .build();
 
         Item item = ItemMapper.toItem(dto);
 
         assertThat(item).isNotNull();
-        assertThat(item.getName()).isEqualTo(dto.getName());
-        assertThat(item.getDescription()).isEqualTo(dto.getDescription());
+        assertThat(item.getName()).isEqualTo("Телефон");
+        assertThat(item.getDescription()).isEqualTo("Рабочий");
         assertThat(item.getAvailable()).isFalse();
     }
 
@@ -56,11 +56,13 @@ class ItemMapperTest {
         Item item = Item.builder()
                 .id(1L)
                 .name("Ноутбук")
+                .description("Мощный")
                 .available(true)
                 .build();
 
         ItemDto dto = ItemMapper.toItemDto(item);
 
-        assertThat(dto.getName()).isEqualTo("Игровой");
+        assertThat(dto.getName()).isEqualTo("Ноутбук");
+        assertThat(dto.getDescription()).isEqualTo("Мощный");
     }
 }

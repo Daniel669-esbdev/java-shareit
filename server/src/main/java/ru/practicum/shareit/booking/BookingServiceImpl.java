@@ -39,6 +39,7 @@ public class BookingServiceImpl implements BookingService {
         if (item.getOwner().getId().equals(userId)) {
             throw new NotFoundException("Владелец не может забронировать свою вещь");
         }
+
         validateDates(bookingDto);
 
         Booking booking = BookingMapper.toBooking(bookingDto);
@@ -52,24 +53,32 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public BookingDto approve(Long userId, Long bookingId, Boolean approved) {
-        Booking booking = getBooking(bookingId);
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new NotFoundException("Бронирование не найдено"));
 
         if (!booking.getItem().getOwner().getId().equals(userId)) {
             throw new NotFoundException("Подтвердить бронирование может только владелец вещи");
         }
+
         if (booking.getStatus() != BookingStatus.WAITING) {
             throw new ValidationException("Статус уже изменен");
         }
 
-        booking.setStatus(approved ? BookingStatus.APPROVED : BookingStatus.REJECTED);
-        return BookingMapper.toBookingDto(bookingRepository.save(booking));
+        if (approved) {
+            booking.setStatus(BookingStatus.APPROVED);
+        } else {
+            booking.setStatus(BookingStatus.REJECTED);
+        }
+
+        return BookingMapper.toBookingDto(booking);
     }
 
     @Override
     public BookingDto getById(Long userId, Long bookingId) {
-        Booking booking = getBooking(bookingId);
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new NotFoundException("Бронирование не найдено"));
 
-        if (!(booking.getBooker().getId().equals(userId) || booking.getItem().getOwner().getId().equals(userId))) {
+        if (!booking.getBooker().getId().equals(userId) && !booking.getItem().getOwner().getId().equals(userId)) {
             throw new NotFoundException("Доступ запрещен для пользователя с id=" + userId);
         }
         return BookingMapper.toBookingDto(booking);
@@ -82,27 +91,31 @@ public class BookingServiceImpl implements BookingService {
         Sort sort = Sort.by(Sort.Direction.DESC, "start");
 
         List<Booking> bookings;
-        switch (state.toUpperCase()) {
-            case "ALL":
-                bookings = bookingRepository.findAllByBookerId(userId, sort);
-                break;
-            case "CURRENT":
-                bookings = bookingRepository.findAllByBookerIdAndStartBeforeAndEndAfter(userId, now, now, sort);
-                break;
-            case "PAST":
-                bookings = bookingRepository.findAllByBookerIdAndEndBefore(userId, now, sort);
-                break;
-            case "FUTURE":
-                bookings = bookingRepository.findAllByBookerIdAndStartAfter(userId, now, sort);
-                break;
-            case "WAITING":
-                bookings = bookingRepository.findAllByBookerIdAndStatus(userId, BookingStatus.WAITING, sort);
-                break;
-            case "REJECTED":
-                bookings = bookingRepository.findAllByBookerIdAndStatus(userId, BookingStatus.REJECTED, sort);
-                break;
-            default:
-                throw new ValidationException("Unknown state: " + state);
+        try {
+            switch (state.toUpperCase()) {
+                case "ALL":
+                    bookings = bookingRepository.findAllByBookerId(userId, sort);
+                    break;
+                case "CURRENT":
+                    bookings = bookingRepository.findAllByBookerIdAndStartBeforeAndEndAfter(userId, now, now, sort);
+                    break;
+                case "PAST":
+                    bookings = bookingRepository.findAllByBookerIdAndEndBefore(userId, now, sort);
+                    break;
+                case "FUTURE":
+                    bookings = bookingRepository.findAllByBookerIdAndStartAfter(userId, now, sort);
+                    break;
+                case "WAITING":
+                    bookings = bookingRepository.findAllByBookerIdAndStatus(userId, BookingStatus.WAITING, sort);
+                    break;
+                case "REJECTED":
+                    bookings = bookingRepository.findAllByBookerIdAndStatus(userId, BookingStatus.REJECTED, sort);
+                    break;
+                default:
+                    throw new ValidationException("Unknown state: " + state);
+            }
+        } catch (IllegalArgumentException e) {
+            throw new ValidationException("Unknown state: " + state);
         }
         return bookings.stream().map(BookingMapper::toBookingDto).collect(Collectors.toList());
     }
@@ -114,27 +127,31 @@ public class BookingServiceImpl implements BookingService {
         Sort sort = Sort.by(Sort.Direction.DESC, "start");
 
         List<Booking> bookings;
-        switch (state.toUpperCase()) {
-            case "ALL":
-                bookings = bookingRepository.findAllByItemOwnerId(userId, sort);
-                break;
-            case "CURRENT":
-                bookings = bookingRepository.findAllByItemOwnerIdAndStartBeforeAndEndAfter(userId, now, now, sort);
-                break;
-            case "PAST":
-                bookings = bookingRepository.findAllByItemOwnerIdAndEndBefore(userId, now, sort);
-                break;
-            case "FUTURE":
-                bookings = bookingRepository.findAllByItemOwnerIdAndStartAfter(userId, now, sort);
-                break;
-            case "WAITING":
-                bookings = bookingRepository.findAllByItemOwnerIdAndStatus(userId, BookingStatus.WAITING, sort);
-                break;
-            case "REJECTED":
-                bookings = bookingRepository.findAllByItemOwnerIdAndStatus(userId, BookingStatus.REJECTED, sort);
-                break;
-            default:
-                throw new ValidationException("Unknown state: UNSUPPORTED_STATUS");
+        try {
+            switch (state.toUpperCase()) {
+                case "ALL":
+                    bookings = bookingRepository.findAllByItemOwnerId(userId, sort);
+                    break;
+                case "CURRENT":
+                    bookings = bookingRepository.findAllByItemOwnerIdAndStartBeforeAndEndAfter(userId, now, now, sort);
+                    break;
+                case "PAST":
+                    bookings = bookingRepository.findAllByItemOwnerIdAndEndBefore(userId, now, sort);
+                    break;
+                case "FUTURE":
+                    bookings = bookingRepository.findAllByItemOwnerIdAndStartAfter(userId, now, sort);
+                    break;
+                case "WAITING":
+                    bookings = bookingRepository.findAllByItemOwnerIdAndStatus(userId, BookingStatus.WAITING, sort);
+                    break;
+                case "REJECTED":
+                    bookings = bookingRepository.findAllByItemOwnerIdAndStatus(userId, BookingStatus.REJECTED, sort);
+                    break;
+                default:
+                    throw new ValidationException("Unknown state: " + state);
+            }
+        } catch (IllegalArgumentException e) {
+            throw new ValidationException("Unknown state: " + state);
         }
         return bookings.stream().map(BookingMapper::toBookingDto).collect(Collectors.toList());
     }
@@ -144,13 +161,11 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() -> new NotFoundException("Пользователь с id=" + userId + " не найден"));
     }
 
-    private Booking getBooking(Long bookingId) {
-        return bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new NotFoundException("Бронирование с id=" + bookingId + " не найдено"));
-    }
-
     private void validateDates(BookingDto dto) {
         LocalDateTime now = LocalDateTime.now();
+        if (dto.getStart() == null || dto.getEnd() == null) {
+            throw new ValidationException("Даты не могут быть пустыми");
+        }
         if (dto.getStart().isBefore(now)) {
             throw new ValidationException("Дата начала не может быть в прошлом");
         }

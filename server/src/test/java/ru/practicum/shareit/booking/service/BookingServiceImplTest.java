@@ -104,6 +104,16 @@ class BookingServiceImplTest {
     }
 
     @Test
+    void create_WhenEndBeforeStart_ThenThrowValidationException() {
+        bookingDto.setStart(LocalDateTime.now().plusDays(2));
+        bookingDto.setEnd(LocalDateTime.now().plusDays(1));
+        when(userRepository.findById(2L)).thenReturn(Optional.of(booker));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+
+        assertThrows(ValidationException.class, () -> bookingService.create(2L, bookingDto));
+    }
+
+    @Test
     void approve_Success() {
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
         when(bookingRepository.save(any())).thenReturn(booking);
@@ -111,6 +121,16 @@ class BookingServiceImplTest {
         BookingDto result = bookingService.approve(1L, 1L, true);
 
         assertEquals(BookingStatus.APPROVED, result.getStatus());
+    }
+
+    @Test
+    void approve_Reject_Success() {
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        when(bookingRepository.save(any())).thenReturn(booking);
+
+        BookingDto result = bookingService.approve(1L, 1L, false);
+
+        assertEquals(BookingStatus.REJECTED, result.getStatus());
     }
 
     @Test
@@ -136,6 +156,13 @@ class BookingServiceImplTest {
 
         assertNotNull(result);
         assertEquals(1L, result.getId());
+    }
+
+    @Test
+    void getById_WhenBookingNotFound_ThenThrowNotFoundException() {
+        when(bookingRepository.findById(anyLong())).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> bookingService.getById(1L, 1L));
     }
 
     @Test
@@ -165,6 +192,12 @@ class BookingServiceImplTest {
     }
 
     @Test
+    void getAllByBooker_WhenUserNotFound_ThenThrowNotFoundException() {
+        when(userRepository.findById(anyLong())).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> bookingService.getAllByBooker(1L, "ALL"));
+    }
+
+    @Test
     void getAllByOwner_WithDifferentStates() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(owner));
         when(bookingRepository.findAllByItemOwnerId(anyLong(), any())).thenReturn(List.of(booking));
@@ -180,5 +213,11 @@ class BookingServiceImplTest {
         assertFalse(bookingService.getAllByOwner(1L, "WAITING").isEmpty());
         assertFalse(bookingService.getAllByOwner(1L, "REJECTED").isEmpty());
         assertThrows(ValidationException.class, () -> bookingService.getAllByOwner(1L, "INVALID"));
+    }
+
+    @Test
+    void getAllByOwner_WhenUserNotFound_ThenThrowNotFoundException() {
+        when(userRepository.findById(anyLong())).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> bookingService.getAllByOwner(1L, "ALL"));
     }
 }

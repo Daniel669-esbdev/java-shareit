@@ -55,12 +55,12 @@ class ItemMapperTest {
     void toItemDtoWithCommentsAndBookings() {
         Item item = Item.builder()
                 .id(1L)
-                .name("Пила")
+                .name("Ноутбук")
                 .available(true)
                 .build();
 
         ItemDto dto = ItemMapper.toItemDto(item);
 
-        assertThat(dto.getName()).isEqualTo("Ноутбук");
+        assertThat(dto.getName()).isEqualTo("Игровой");
     }
 }

@@ -17,8 +17,8 @@ class ItemMapperTest {
         ItemRequest request = ItemRequest.builder().id(10L).build();
         Item item = Item.builder()
                 .id(1L)
-                .name("Дрель")
-                .description("Мощная")
+                .name("Ноутбук")
+                .description("Игровой")
                 .available(true)
                 .owner(owner)
                 .request(request)
@@ -38,8 +38,8 @@ class ItemMapperTest {
     void toItem() {
         ItemDto dto = ItemDto.builder()
                 .id(1L)
-                .name("Отвертка")
-                .description("Крестовая")
+                .name("Ноутбук")
+                .description("Игровой")
                 .available(false)
                 .build();
 
@@ -61,6 +61,6 @@ class ItemMapperTest {
 
         ItemDto dto = ItemMapper.toItemDto(item);
 
-        assertThat(dto.getName()).isEqualTo("Пила");
+        assertThat(dto.getName()).isEqualTo("Ноутбук");
     }
 }

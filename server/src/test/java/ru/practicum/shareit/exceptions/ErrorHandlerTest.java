@@ -48,6 +48,6 @@ class ErrorHandlerTest {
 
         assertThat(response).isNotNull();
         assertThat(response.get("error")).isEqualTo("Произошла непредвиденная ошибка");
-        assertThat(response.get("message")).isEqualTo("Internal error");
+        assertThat(response).doesNotContainKey("message");
     }
 }

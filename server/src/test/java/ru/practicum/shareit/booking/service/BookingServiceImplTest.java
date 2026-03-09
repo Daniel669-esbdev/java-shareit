@@ -116,7 +116,6 @@ class BookingServiceImplTest {
     @Test
     void approve_Success() {
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
-        when(bookingRepository.save(any())).thenReturn(booking);
 
         BookingDto result = bookingService.approve(1L, 1L, true);
 
@@ -126,7 +125,6 @@ class BookingServiceImplTest {
     @Test
     void approve_Reject_Success() {
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
-        when(bookingRepository.save(any())).thenReturn(booking);
 
         BookingDto result = bookingService.approve(1L, 1L, false);
 
@@ -167,7 +165,6 @@ class BookingServiceImplTest {
 
     @Test
     void getById_WhenAccessDenied_ThenThrowNotFoundException() {
-        User otherUser = User.builder().id(3L).build();
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
 
         assertThrows(NotFoundException.class, () -> bookingService.getById(3L, 1L));

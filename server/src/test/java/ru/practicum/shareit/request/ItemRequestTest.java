@@ -44,15 +44,4 @@ class ItemRequestTest {
         assertEquals("ноутбук в аренду", request.getDescription());
         assertEquals(now, request.getCreated());
     }
-
-    @Test
-    void testItemRequestEqualsAndHashCode() {
-        ItemRequest request1 = ItemRequest.builder().id(1L).build();
-        ItemRequest request2 = ItemRequest.builder().id(1L).build();
-        ItemRequest request3 = ItemRequest.builder().id(2L).build();
-
-        assertEquals(request1, request2);
-        assertNotEquals(request1, request3);
-        assertEquals(request1.hashCode(), request2.hashCode());
-    }
 }

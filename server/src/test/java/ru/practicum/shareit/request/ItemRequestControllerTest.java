@@ -43,7 +43,7 @@ class ItemRequestControllerTest {
                 .created(LocalDateTime.now())
                 .build();
 
-        when(itemRequestService.create(anyLong(), any()))
+        when(itemRequestService.create(anyLong(), any(ItemRequestDto.class)))
                 .thenReturn(outputDto);
 
         mvc.perform(post("/requests")

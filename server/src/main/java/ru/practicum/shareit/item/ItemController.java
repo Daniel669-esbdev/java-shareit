@@ -19,23 +19,22 @@ public class ItemController {
 
     @PostMapping
     public ItemDto create(@RequestHeader(USER_ID_HEADER) Long userId,
-    @Valid
-    @RequestBody ItemDto itemDto) {
+        @Valid @RequestBody ItemDto itemDto) {
         log.info("POST /items id={}", userId);
         return itemService.create(userId, itemDto);
     }
 
     @PatchMapping("/{itemId}")
     public ItemDto update(@RequestHeader(USER_ID_HEADER) Long userId,
-                          @PathVariable Long itemId,
-                          @RequestBody ItemDto itemDto) {
+        @PathVariable("itemId") Long itemId,
+        @RequestBody ItemDto itemDto) {
         log.info("PATCH /items/{} id={}", itemId, userId);
         return itemService.update(userId, itemId, itemDto);
     }
 
     @GetMapping("/{itemId}")
     public ItemDto getById(@RequestHeader(USER_ID_HEADER) Long userId,
-    @PathVariable Long itemId) {
+        @PathVariable("itemId") Long itemId) {
         log.info("GET /items/{} id={}", itemId, userId);
         return itemService.getById(itemId, userId);
     }
@@ -47,16 +46,15 @@ public class ItemController {
     }
 
     @GetMapping("/search")
-    public List<ItemDto> search(@RequestParam String text) {
+    public List<ItemDto> search(@RequestParam("text") String text) {
         log.info("GET /items/search?text={}", text);
         return itemService.search(text);
     }
 
     @PostMapping("/{itemId}/comment")
     public CommentDto createComment(@RequestHeader(USER_ID_HEADER) Long userId,
-        @PathVariable Long itemId,
-        @Valid
-        @RequestBody CommentDto commentDto) {
+        @PathVariable("itemId") Long itemId,
+        @Valid @RequestBody CommentDto commentDto) {
         log.info("POST /items/{}/comment id={}", itemId, userId);
         return itemService.createComment(userId, itemId, commentDto);
     }

@@ -64,13 +64,9 @@ public class BookingServiceImpl implements BookingService {
             throw new ValidationException("Статус уже изменен");
         }
 
-        if (approved) {
-            booking.setStatus(BookingStatus.APPROVED);
-        } else {
-            booking.setStatus(BookingStatus.REJECTED);
-        }
+        booking.setStatus(approved ? BookingStatus.APPROVED : BookingStatus.REJECTED);
 
-        return BookingMapper.toBookingDto(booking);
+        return BookingMapper.toBookingDto(bookingRepository.save(booking));
     }
 
     @Override
@@ -91,31 +87,27 @@ public class BookingServiceImpl implements BookingService {
         Sort sort = Sort.by(Sort.Direction.DESC, "start");
 
         List<Booking> bookings;
-        try {
-            switch (state.toUpperCase()) {
-                case "ALL":
-                    bookings = bookingRepository.findAllByBookerId(userId, sort);
-                    break;
-                case "CURRENT":
-                    bookings = bookingRepository.findAllByBookerIdAndStartBeforeAndEndAfter(userId, now, now, sort);
-                    break;
-                case "PAST":
-                    bookings = bookingRepository.findAllByBookerIdAndEndBefore(userId, now, sort);
-                    break;
-                case "FUTURE":
-                    bookings = bookingRepository.findAllByBookerIdAndStartAfter(userId, now, sort);
-                    break;
-                case "WAITING":
-                    bookings = bookingRepository.findAllByBookerIdAndStatus(userId, BookingStatus.WAITING, sort);
-                    break;
-                case "REJECTED":
-                    bookings = bookingRepository.findAllByBookerIdAndStatus(userId, BookingStatus.REJECTED, sort);
-                    break;
-                default:
-                    throw new ValidationException("Unknown state: " + state);
-            }
-        } catch (IllegalArgumentException e) {
-            throw new ValidationException("Unknown state: " + state);
+        switch (state.toUpperCase()) {
+            case "ALL":
+                bookings = bookingRepository.findAllByBookerId(userId, sort);
+                break;
+            case "CURRENT":
+                bookings = bookingRepository.findAllByBookerIdAndStartBeforeAndEndAfter(userId, now, now, sort);
+                break;
+            case "PAST":
+                bookings = bookingRepository.findAllByBookerIdAndEndBefore(userId, now, sort);
+                break;
+            case "FUTURE":
+                bookings = bookingRepository.findAllByBookerIdAndStartAfter(userId, now, sort);
+                break;
+            case "WAITING":
+                bookings = bookingRepository.findAllByBookerIdAndStatus(userId, BookingStatus.WAITING, sort);
+                break;
+            case "REJECTED":
+                bookings = bookingRepository.findAllByBookerIdAndStatus(userId, BookingStatus.REJECTED, sort);
+                break;
+            default:
+                throw new ValidationException("Unknown state: " + state);
         }
         return bookings.stream().map(BookingMapper::toBookingDto).collect(Collectors.toList());
     }
@@ -127,31 +119,27 @@ public class BookingServiceImpl implements BookingService {
         Sort sort = Sort.by(Sort.Direction.DESC, "start");
 
         List<Booking> bookings;
-        try {
-            switch (state.toUpperCase()) {
-                case "ALL":
-                    bookings = bookingRepository.findAllByItemOwnerId(userId, sort);
-                    break;
-                case "CURRENT":
-                    bookings = bookingRepository.findAllByItemOwnerIdAndStartBeforeAndEndAfter(userId, now, now, sort);
-                    break;
-                case "PAST":
-                    bookings = bookingRepository.findAllByItemOwnerIdAndEndBefore(userId, now, sort);
-                    break;
-                case "FUTURE":
-                    bookings = bookingRepository.findAllByItemOwnerIdAndStartAfter(userId, now, sort);
-                    break;
-                case "WAITING":
-                    bookings = bookingRepository.findAllByItemOwnerIdAndStatus(userId, BookingStatus.WAITING, sort);
-                    break;
-                case "REJECTED":
-                    bookings = bookingRepository.findAllByItemOwnerIdAndStatus(userId, BookingStatus.REJECTED, sort);
-                    break;
-                default:
-                    throw new ValidationException("Unknown state: " + state);
-            }
-        } catch (IllegalArgumentException e) {
-            throw new ValidationException("Unknown state: " + state);
+        switch (state.toUpperCase()) {
+            case "ALL":
+                bookings = bookingRepository.findAllByItemOwnerId(userId, sort);
+                break;
+            case "CURRENT":
+                bookings = bookingRepository.findAllByItemOwnerIdAndStartBeforeAndEndAfter(userId, now, now, sort);
+                break;
+            case "PAST":
+                bookings = bookingRepository.findAllByItemOwnerIdAndEndBefore(userId, now, sort);
+                break;
+            case "FUTURE":
+                bookings = bookingRepository.findAllByItemOwnerIdAndStartAfter(userId, now, sort);
+                break;
+            case "WAITING":
+                bookings = bookingRepository.findAllByItemOwnerIdAndStatus(userId, BookingStatus.WAITING, sort);
+                break;
+            case "REJECTED":
+                bookings = bookingRepository.findAllByItemOwnerIdAndStatus(userId, BookingStatus.REJECTED, sort);
+                break;
+            default:
+                throw new ValidationException("Unknown state: " + state);
         }
         return bookings.stream().map(BookingMapper::toBookingDto).collect(Collectors.toList());
     }

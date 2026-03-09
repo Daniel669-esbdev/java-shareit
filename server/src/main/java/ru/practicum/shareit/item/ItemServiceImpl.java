@@ -132,6 +132,10 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public CommentDto createComment(Long userId, Long itemId, CommentDto commentDto) {
+        if (commentDto.getText() == null || commentDto.getText().isBlank()) {
+            throw new ValidationException("Текст комментария не может быть пустым");
+        }
+
         LocalDateTime now = LocalDateTime.now();
         boolean hasBooking = bookingRepository.existsByBookerIdAndItemIdAndEndBeforeAndStatus(
                 userId, itemId, now, BookingStatus.APPROVED);

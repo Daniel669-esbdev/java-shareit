@@ -116,19 +116,25 @@ class BookingServiceImplTest {
     @Test
     void approve_Success() {
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        when(bookingRepository.save(any())).thenReturn(booking);
 
         BookingDto result = bookingService.approve(1L, 1L, true);
 
+        assertNotNull(result);
         assertEquals(BookingStatus.APPROVED, result.getStatus());
+        verify(bookingRepository).save(any());
     }
 
     @Test
     void approve_Reject_Success() {
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        when(bookingRepository.save(any())).thenReturn(booking);
 
         BookingDto result = bookingService.approve(1L, 1L, false);
 
+        assertNotNull(result);
         assertEquals(BookingStatus.REJECTED, result.getStatus());
+        verify(bookingRepository).save(any());
     }
 
     @Test

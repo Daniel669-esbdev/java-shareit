@@ -74,6 +74,6 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Map<String, String> handleThrowable(final Throwable e) {
         log.error("500 Internal Server Error: ", e);
-        return Map.of("error", "Unknown state: UNSUPPORTED_STATUS");
+        return Map.of("error", "Произошла непредвиденная ошибка");
     }
 }

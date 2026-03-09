@@ -28,14 +28,14 @@ public class ItemController {
     @PatchMapping("/{itemId}")
     public ResponseEntity<Object> updateItem(@RequestHeader("X-Sharer-User-Id") long userId,
         @RequestBody ItemDto itemDto,
-        @PathVariable long itemId) {
+        @PathVariable("itemId") long itemId) {
         log.info("Updating item {}, userId={}, itemId={}", itemDto, userId, itemId);
         return itemClient.updateItem(userId, itemId, itemDto);
     }
 
     @GetMapping("/{itemId}")
     public ResponseEntity<Object> getItem(@RequestHeader("X-Sharer-User-Id") long userId,
-        @PathVariable long itemId) {
+        @PathVariable("itemId") long itemId) {
         log.info("Get item {}, userId={}", itemId, userId);
         return itemClient.getItem(userId, itemId);
     }
@@ -48,15 +48,15 @@ public class ItemController {
 
     @GetMapping("/search")
     public ResponseEntity<Object> searchItems(@RequestHeader("X-Sharer-User-Id") long userId,
-        @RequestParam String text) {
+        @RequestParam("text") String text) {
         log.info("Search items by text={}, userId={}", text, userId);
         return itemClient.search(userId, text);
     }
 
     @PostMapping("/{itemId}/comment")
     public ResponseEntity<Object> createComment(@RequestHeader("X-Sharer-User-Id") long userId,
-        @PathVariable long itemId,
-        @RequestBody @Valid CommentDto commentDto) {
+         @PathVariable("itemId") long itemId,
+         @RequestBody @Valid CommentDto commentDto) {
         log.info("Creating comment for item {}, userId={}", itemId, userId);
         return itemClient.addComment(userId, itemId, commentDto);
     }

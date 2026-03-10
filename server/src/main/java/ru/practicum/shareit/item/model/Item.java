@@ -36,4 +36,8 @@ public class Item {
     @JoinColumn(name = "request_id")
     @ToString.Exclude
     private ItemRequest request;
+
+    public Long getRequestId() {
+        return request != null ? request.getId() : null;
+    }
 }

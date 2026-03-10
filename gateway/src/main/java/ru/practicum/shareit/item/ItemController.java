@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.item.dto.CommentDto;
 
+import java.util.Collections;
+
 @Controller
 @RequestMapping(path = "/items")
 @RequiredArgsConstructor
@@ -50,13 +52,16 @@ public class ItemController {
     public ResponseEntity<Object> searchItems(@RequestHeader("X-Sharer-User-Id") long userId,
         @RequestParam("text") String text) {
         log.info("Search items by text={}, userId={}", text, userId);
+        if (text == null || text.isBlank()) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
         return itemClient.search(userId, text);
     }
 
     @PostMapping("/{itemId}/comment")
     public ResponseEntity<Object> createComment(@RequestHeader("X-Sharer-User-Id") long userId,
-         @PathVariable("itemId") long itemId,
-         @RequestBody @Valid CommentDto commentDto) {
+        @PathVariable("itemId") long itemId,
+        @RequestBody @Valid CommentDto commentDto) {
         log.info("Creating comment for item {}, userId={}", itemId, userId);
         return itemClient.addComment(userId, itemId, commentDto);
     }

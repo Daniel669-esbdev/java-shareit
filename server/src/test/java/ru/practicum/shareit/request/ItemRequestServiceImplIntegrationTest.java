@@ -1,7 +1,6 @@
 package ru.practicum.shareit.request;
 
 import jakarta.persistence.EntityManager;
-import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,12 +15,16 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
 @Transactional
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
-@RequiredArgsConstructor(onConstructor_ = @Autowired)
+@SpringBootTest(
+        properties = "spring.main.web-application-type=none",
+        webEnvironment = SpringBootTest.WebEnvironment.NONE)
 class ItemRequestServiceImplIntegrationTest {
 
-    private final EntityManager em;
-    private final ItemRequestService service;
+    @Autowired
+    private EntityManager em;
+
+    @Autowired
+    private ItemRequestService service;
 
     @Test
     void createAndGetById() {

@@ -1,7 +1,6 @@
 package ru.practicum.shareit.item;
 
 import jakarta.persistence.EntityManager;
-import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -17,13 +16,15 @@ import static org.hamcrest.Matchers.*;
 
 @Transactional
 @SpringBootTest(
-        properties = "db.name=test",
+        properties = "spring.main.web-application-type=none",
         webEnvironment = SpringBootTest.WebEnvironment.NONE)
-@RequiredArgsConstructor(onConstructor_ = @Autowired)
 public class ItemServiceImplIntegrationTest {
 
-    private final EntityManager em;
-    private final ItemService service;
+    @Autowired
+    private EntityManager em;
+
+    @Autowired
+    private ItemService service;
 
     @Test
     void getByOwner() {

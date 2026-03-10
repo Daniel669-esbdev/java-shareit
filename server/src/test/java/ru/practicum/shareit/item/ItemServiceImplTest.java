@@ -7,7 +7,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
 import ru.practicum.shareit.booking.BookingRepository;
+import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.dto.CommentDto;
@@ -124,7 +126,7 @@ class ItemServiceImplTest {
     void getByOwner_Success() {
         when(userRepository.findById(anyLong())).thenReturn(Optional.of(user));
         when(itemRepository.findAllByOwnerId(anyLong())).thenReturn(List.of(item));
-        when(bookingRepository.findAllByItemIdInAndStatusNot(anyList(), any(), any()))
+        when(bookingRepository.findAllByItemIdInAndStatus(anyList(), any(BookingStatus.class), any(Sort.class)))
                 .thenReturn(Collections.emptyList());
         when(commentRepository.findAllByItemIdIn(anyList())).thenReturn(Collections.emptyList());
 

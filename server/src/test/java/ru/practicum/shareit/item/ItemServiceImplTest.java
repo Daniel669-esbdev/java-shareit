@@ -8,6 +8,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
+import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.exception.NotFoundException;
@@ -96,13 +97,30 @@ class ItemServiceImplTest {
     }
 
     @Test
-    void update_Success() {
+    void create_WithRequestId_NotFound_ShouldThrowNotFoundException() {
+        itemDto.setRequestId(10L);
+
+        when(userRepository.findById(anyLong())).thenReturn(Optional.of(user));
+        when(itemRequestRepository.findById(anyLong())).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> itemService.create(1L, itemDto));
+    }
+
+    @Test
+    void update_AllFields_Success() {
         when(itemRepository.findById(anyLong())).thenReturn(Optional.of(item));
 
-        ItemDto updateDto = ItemDto.builder().name("ноутбук Daniel").build();
+        ItemDto updateDto = ItemDto.builder()
+                .name("новый ноутбук")
+                .description("еще мощнее")
+                .available(false)
+                .build();
+
         ItemDto result = itemService.update(1L, 1L, updateDto);
 
-        assertEquals("ноутбук Daniel", result.getName());
+        assertEquals("новый ноутбук", result.getName());
+        assertEquals("еще мощнее", result.getDescription());
+        assertFalse(result.getAvailable());
     }
 
     @Test
@@ -112,28 +130,55 @@ class ItemServiceImplTest {
     }
 
     @Test
-    void getById_Success() {
+    void getById_ByOwner_WithBookings_Success() {
+        Booking lastBooking = Booking.builder().id(1L).start(LocalDateTime.now().minusDays(2)).end(LocalDateTime.now().minusDays(1)).booker(user).build();
+        Booking nextBooking = Booking.builder().id(2L).start(LocalDateTime.now().plusDays(1)).end(LocalDateTime.now().plusDays(2)).booker(user).build();
+
         when(itemRepository.findById(anyLong())).thenReturn(Optional.of(item));
         when(commentRepository.findAllByItemId(anyLong())).thenReturn(Collections.emptyList());
+        when(bookingRepository.findAllByItemIdAndStatus(anyLong(), any(BookingStatus.class), any(Sort.class)))
+                .thenReturn(List.of(lastBooking, nextBooking));
 
         ItemDto result = itemService.getById(1L, 1L);
 
         assertNotNull(result);
         assertEquals("ноутбук", result.getName());
+        assertNotNull(result.getLastBooking());
+        assertNotNull(result.getNextBooking());
+    }
+
+    @Test
+    void getById_NotByOwner_Success() {
+        User otherUser = User.builder().id(2L).build();
+        Item itemOtherOwner = Item.builder().id(2L).owner(otherUser).build();
+
+        when(itemRepository.findById(anyLong())).thenReturn(Optional.of(itemOtherOwner));
+        when(commentRepository.findAllByItemId(anyLong())).thenReturn(Collections.emptyList());
+
+        ItemDto result = itemService.getById(2L, 1L);
+
+        assertNotNull(result);
+        assertNull(result.getLastBooking());
+        assertNull(result.getNextBooking());
     }
 
     @Test
     void getByOwner_Success() {
+        Booking booking = Booking.builder().id(1L).item(item).start(LocalDateTime.now().minusDays(1)).end(LocalDateTime.now().plusDays(1)).booker(user).build();
+        Comment comment = Comment.builder().id(1L).item(item).text("text").build();
+
         when(userRepository.findById(anyLong())).thenReturn(Optional.of(user));
         when(itemRepository.findAllByOwnerId(anyLong())).thenReturn(List.of(item));
         when(bookingRepository.findAllByItemIdInAndStatus(anyList(), any(BookingStatus.class), any(Sort.class)))
-                .thenReturn(Collections.emptyList());
-        when(commentRepository.findAllByItemIdIn(anyList())).thenReturn(Collections.emptyList());
+                .thenReturn(List.of(booking));
+        when(commentRepository.findAllByItemIdIn(anyList())).thenReturn(List.of(comment));
 
         List<ItemDto> result = itemService.getByOwner(1L);
 
         assertFalse(result.isEmpty());
         assertEquals(1, result.size());
+        assertNotNull(result.get(0).getLastBooking());
+        assertEquals(1, result.get(0).getComments().size());
     }
 
     @Test
@@ -148,8 +193,8 @@ class ItemServiceImplTest {
 
     @Test
     void search_EmptyText() {
-        List<ItemDto> result = itemService.search("");
-        assertTrue(result.isEmpty());
+        assertTrue(itemService.search("").isEmpty());
+        assertTrue(itemService.search(null).isEmpty());
     }
 
     @Test
@@ -182,5 +227,14 @@ class ItemServiceImplTest {
 
         CommentDto commentDto = CommentDto.builder().text("Text").build();
         assertThrows(ValidationException.class, () -> itemService.createComment(1L, 1L, commentDto));
+    }
+
+    @Test
+    void createComment_WhenTextIsEmpty_ShouldThrowValidationException() {
+        CommentDto emptyComment = CommentDto.builder().text(" ").build();
+        CommentDto nullComment = CommentDto.builder().text(null).build();
+
+        assertThrows(ValidationException.class, () -> itemService.createComment(1L, 1L, emptyComment));
+        assertThrows(ValidationException.class, () -> itemService.createComment(1L, 1L, nullComment));
     }
 }

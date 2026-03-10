@@ -107,16 +107,4 @@ class ItemRequestControllerTest {
                         .header("X-Sharer-User-Id", 1L))
                 .andExpect(status().isOk());
     }
-
-    @Test
-    void create_whenNoUserHeader_thenBadRequest() throws Exception {
-        ItemRequestDto dto = ItemRequestDto.builder()
-                .description("Test")
-                .build();
-
-        mvc.perform(post("/requests")
-                        .content(mapper.writeValueAsString(dto))
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-    }
 }

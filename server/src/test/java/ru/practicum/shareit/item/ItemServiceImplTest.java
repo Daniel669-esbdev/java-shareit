@@ -7,8 +7,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingRepository;
+import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.dto.CommentDto;
@@ -77,12 +79,14 @@ class ItemServiceImplTest {
 
         assertNotNull(result);
         assertEquals("ноутбук", result.getName());
+        verify(itemRepository).save(any());
     }
 
     @Test
     void create_WithRequestId_Success() {
         itemDto.setRequestId(10L);
         ItemRequest request = ItemRequest.builder().id(10L).build();
+        item.setRequest(request);
 
         when(userRepository.findById(anyLong())).thenReturn(Optional.of(user));
         when(itemRequestRepository.findById(10L)).thenReturn(Optional.of(request));
@@ -91,7 +95,7 @@ class ItemServiceImplTest {
         ItemDto result = itemService.create(1L, itemDto);
 
         assertNotNull(result);
-        verify(itemRequestRepository).findById(10L);
+        assertEquals(10L, result.getRequestId());
     }
 
     @Test
@@ -139,18 +143,33 @@ class ItemServiceImplTest {
 
     @Test
     void getById_ByOwner_WithBookings_Success() {
-        Booking last = Booking.builder().id(1L).start(LocalDateTime.now().minusDays(2)).end(LocalDateTime.now().minusDays(1)).booker(user).build();
-        Booking next = Booking.builder().id(2L).start(LocalDateTime.now().plusDays(1)).end(LocalDateTime.now().plusDays(2)).booker(user).build();
+        LocalDateTime now = LocalDateTime.now();
+        Booking last = Booking.builder()
+                .id(1L)
+                .start(now.minusDays(1))
+                .end(now.minusHours(1))
+                .booker(user)
+                .status(BookingStatus.APPROVED)
+                .build();
+        Booking next = Booking.builder()
+                .id(2L)
+                .start(now.plusDays(1))
+                .end(now.plusDays(2))
+                .booker(user)
+                .status(BookingStatus.APPROVED)
+                .build();
 
         when(itemRepository.findById(anyLong())).thenReturn(Optional.of(item));
         when(commentRepository.findAllByItemId(anyLong())).thenReturn(Collections.emptyList());
-        when(bookingRepository.findAllByItemIdAndStatus(anyLong(), any(), any()))
+        when(bookingRepository.findAllByItemIdAndStatus(anyLong(), eq(BookingStatus.APPROVED), any(Sort.class)))
                 .thenReturn(List.of(last, next));
 
         ItemDto result = itemService.getById(1L, 1L);
 
         assertNotNull(result.getLastBooking());
         assertNotNull(result.getNextBooking());
+        assertEquals(1L, result.getLastBooking().getId());
+        assertEquals(2L, result.getNextBooking().getId());
     }
 
     @Test
@@ -169,15 +188,16 @@ class ItemServiceImplTest {
 
     @Test
     void getByOwner_Success() {
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(itemRepository.findAllByOwnerId(1L)).thenReturn(List.of(item));
-        when(bookingRepository.findAllByItemIdInAndStatus(anyList(), any(), any())).thenReturn(Collections.emptyList());
+        when(userRepository.findById(anyLong())).thenReturn(Optional.of(user));
+        when(itemRepository.findAllByOwnerId(anyLong())).thenReturn(List.of(item));
+        when(bookingRepository.findAllByItemIdInAndStatus(anyList(), eq(BookingStatus.APPROVED), any(Sort.class)))
+                .thenReturn(Collections.emptyList());
         when(commentRepository.findAllByItemIdIn(anyList())).thenReturn(Collections.emptyList());
 
         List<ItemDto> result = itemService.getByOwner(1L);
 
         assertFalse(result.isEmpty());
-        verify(itemRepository).findAllByOwnerId(1L);
+        assertEquals(1, result.size());
     }
 
     @Test
@@ -194,17 +214,25 @@ class ItemServiceImplTest {
     void search_EmptyOrNull_ReturnsEmptyList() {
         assertTrue(itemService.search("").isEmpty());
         assertTrue(itemService.search(null).isEmpty());
+        verify(itemRepository, never()).search(anyString());
     }
 
     @Test
     void createComment_Success() {
         CommentDto commentDto = CommentDto.builder().text("супер").build();
-        Comment comment = Comment.builder().id(1L).text("супер").author(user).item(item).created(LocalDateTime.now()).build();
+        Comment comment = Comment.builder()
+                .id(1L)
+                .text("супер")
+                .author(user)
+                .item(item)
+                .created(LocalDateTime.now())
+                .build();
 
-        when(bookingRepository.existsByBookerIdAndItemIdAndEndBeforeAndStatus(anyLong(), anyLong(), any(), any())).thenReturn(true);
+        when(bookingRepository.existsByBookerIdAndItemIdAndEndBeforeAndStatus(
+                anyLong(), anyLong(), any(LocalDateTime.class), eq(BookingStatus.APPROVED))).thenReturn(true);
         when(userRepository.findById(anyLong())).thenReturn(Optional.of(user));
         when(itemRepository.findById(anyLong())).thenReturn(Optional.of(item));
-        when(commentRepository.save(any())).thenReturn(comment);
+        when(commentRepository.save(any(Comment.class))).thenReturn(comment);
 
         CommentDto result = itemService.createComment(1L, 1L, commentDto);
 
@@ -214,7 +242,8 @@ class ItemServiceImplTest {
 
     @Test
     void createComment_NoBooking_ThrowsValidationException() {
-        when(bookingRepository.existsByBookerIdAndItemIdAndEndBeforeAndStatus(anyLong(), anyLong(), any(), any())).thenReturn(false);
+        when(bookingRepository.existsByBookerIdAndItemIdAndEndBeforeAndStatus(
+                anyLong(), anyLong(), any(LocalDateTime.class), eq(BookingStatus.APPROVED))).thenReturn(false);
 
         CommentDto commentDto = CommentDto.builder().text("текст").build();
         assertThrows(ValidationException.class, () -> itemService.createComment(1L, 1L, commentDto));
@@ -224,5 +253,11 @@ class ItemServiceImplTest {
     void createComment_EmptyText_ThrowsValidationException() {
         CommentDto empty = CommentDto.builder().text(" ").build();
         assertThrows(ValidationException.class, () -> itemService.createComment(1L, 1L, empty));
+    }
+
+    @Test
+    void getById_NotFound_ThrowsNotFoundException() {
+        when(itemRepository.findById(anyLong())).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> itemService.getById(99L, 1L));
     }
 }

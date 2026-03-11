@@ -26,4 +26,12 @@ class CommentMapperTest {
         assertThat(dto.getText()).isEqualTo("Отлично!");
         assertThat(dto.getAuthorName()).isEqualTo("Автор");
     }
+
+    @Test
+    void testCommentMapperConstructor() throws Exception {
+        java.lang.reflect.Constructor<CommentMapper> constructor = CommentMapper.class.getDeclaredConstructor();
+        constructor.setAccessible(true);
+        org.junit.jupiter.api.Assertions.assertThrows(java.lang.reflect.InvocationTargetException.class,
+                constructor::newInstance);
+    }
 }

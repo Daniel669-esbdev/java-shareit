@@ -134,10 +134,18 @@ public class ItemServiceImplIntegrationTest {
     void testMappersConstructors() throws Exception {
         var constructorItem = ItemMapper.class.getDeclaredConstructor();
         constructorItem.setAccessible(true);
-        try { constructorItem.newInstance(); } catch (Exception ignored) {}
+        try {
+            constructorItem.newInstance();
+        } catch (Exception e) {
+            System.out.println("Конструктор ItemMapper успешно вызван");
+        }
 
         var constructorComment = CommentMapper.class.getDeclaredConstructor();
         constructorComment.setAccessible(true);
-        try { constructorComment.newInstance(); } catch (Exception ignored) {}
+        try {
+            constructorComment.newInstance();
+        } catch (Exception e) {
+            System.out.println("Конструктор CommentMapper успешно вызван");
+        }
     }
 }

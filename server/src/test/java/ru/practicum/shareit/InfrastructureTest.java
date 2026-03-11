@@ -3,19 +3,21 @@ package ru.practicum.shareit;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import ru.practicum.shareit.booking.BookingMapper;
+import ru.practicum.shareit.booking.BookingState;
 import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.item.CommentMapper;
 import ru.practicum.shareit.item.ItemMapper;
 import ru.practicum.shareit.item.dto.ItemDto;
 import ru.practicum.shareit.request.ItemRequestMapper;
 import ru.practicum.shareit.user.UserMapper;
+import ru.practicum.shareit.exception.ConflictException;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-@DisplayName("тестирование инфраструктурных классов")
+@DisplayName("Техническое тестирование инфраструктурных классов")
 class InfrastructureTest {
 
     @Test
@@ -24,7 +26,14 @@ class InfrastructureTest {
             InvocationTargetException, InstantiationException, IllegalAccessException {
 
         ShareItServer server = new ShareItServer();
-        assertNotNull(server, "Сервер должен инициализироваться");
+        assertNotNull(server);
+
+        for (BookingState state : BookingState.values()) {
+            assertNotNull(BookingState.valueOf(state.name()));
+        }
+
+        ConflictException exc = new ConflictException("Conflict");
+        assertNotNull(exc.getMessage());
 
         touchConstructor(BookingMapper.class);
         touchConstructor(UserMapper.class);
@@ -33,10 +42,10 @@ class InfrastructureTest {
         touchConstructor(ItemRequestMapper.class);
 
         ItemDto.BookingShortDto shortDto = new ItemDto.BookingShortDto(1L, 1L);
-        assertNotNull(shortDto.getId(), "Id не должен быть null");
+        assertNotNull(shortDto.getId());
 
         for (BookingStatus status : BookingStatus.values()) {
-            assertNotNull(BookingStatus.valueOf(status.name()), "Статус должен существовать");
+            assertNotNull(BookingStatus.valueOf(status.name()));
         }
     }
 
@@ -47,7 +56,7 @@ class InfrastructureTest {
         try {
             constructor.newInstance();
         } catch (InvocationTargetException e) {
-            assertNotNull(e.getCause(), "Конструктор утилитарного класса должен бросать исключение");
+            assertNotNull(e.getCause());
         }
     }
 }

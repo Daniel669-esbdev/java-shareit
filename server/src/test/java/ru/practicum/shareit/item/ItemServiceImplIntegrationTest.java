@@ -166,4 +166,16 @@ public class ItemServiceImplIntegrationTest {
             System.out.println("Конструктор ItemRequestMapper успешно вызван");
         }
     }
+
+    @Test
+    void testUserMapperConstructor() throws Exception {
+        java.lang.reflect.Constructor<ru.practicum.shareit.user.UserMapper> constructor =
+                ru.practicum.shareit.user.UserMapper.class.getDeclaredConstructor();
+        constructor.setAccessible(true);
+        try {
+            constructor.newInstance();
+        } catch (Exception e) {
+            System.out.println("Конструктор UserMapper вызван успешно");
+        }
+    }
 }

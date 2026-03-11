@@ -87,8 +87,8 @@ public class ItemServiceImpl implements ItemService {
                 .collect(toList()));
 
         if (item.getOwner().getId().equals(userId)) {
-            List<Booking> bookings = bookingRepository.findAllByItemIdAndStatusNot(itemId,
-                    BookingStatus.REJECTED, Sort.by(Sort.Direction.ASC, "start"));
+            List<Booking> bookings = bookingRepository.findAllByItemIdAndStatus(itemId,
+                    BookingStatus.APPROVED, Sort.by(Sort.Direction.ASC, "start"));
             setBookings(itemDto, bookings);
         }
 
@@ -101,8 +101,8 @@ public class ItemServiceImpl implements ItemService {
         List<Item> items = itemRepository.findAllByOwnerId(userId);
         List<Long> itemIds = items.stream().map(Item::getId).collect(toList());
 
-        Map<Long, List<Booking>> bookingsMap = bookingRepository.findAllByItemIdInAndStatusNot(itemIds,
-                        BookingStatus.REJECTED, Sort.by(Sort.Direction.ASC, "start"))
+        Map<Long, List<Booking>> bookingsMap = bookingRepository.findAllByItemIdInAndStatus(itemIds,
+                        BookingStatus.APPROVED, Sort.by(Sort.Direction.ASC, "start"))
                 .stream().collect(groupingBy(b -> b.getItem().getId()));
 
         Map<Long, List<Comment>> commentsMap = commentRepository.findAllByItemIdIn(itemIds)
@@ -126,7 +126,8 @@ public class ItemServiceImpl implements ItemService {
             return Collections.emptyList();
         }
         return itemRepository.search(text).stream()
-                .map(ItemMapper::toItemDto).collect(toList());
+                .map(ItemMapper::toItemDto)
+                .collect(toList());
     }
 
     @Override
@@ -137,7 +138,7 @@ public class ItemServiceImpl implements ItemService {
                 userId, itemId, now, BookingStatus.APPROVED);
 
         if (!hasBooking) {
-            throw new ValidationException("Пользователь с id=" + userId + " не брал в аренду вещь с id=" + itemId);
+            throw new ValidationException("Пользователь не может оставить комментарий к вещи, которую не арендовал");
         }
 
         User author = getUser(userId);

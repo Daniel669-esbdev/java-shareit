@@ -28,7 +28,7 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.CONFLICT)
     public Map<String, String> handleDataIntegrity(final DataIntegrityViolationException e) {
         log.error("409 Data Conflict: {}", e.getMessage());
-        return Map.of("error", "Конфликт целостности данных: такой email уже существует");
+        return Map.of("error", "Конфликт целостности данных");
     }
 
     @ExceptionHandler(ConflictException.class)
@@ -56,12 +56,10 @@ public class ErrorHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleUnknownState(final MethodArgumentTypeMismatchException e) {
-        if ("state".equals(e.getName())) {
+        if (e.getName().equals("state")) {
             String value = e.getValue() != null ? e.getValue().toString() : "UNKNOWN";
-            log.error("400 Unknown State: {}", value);
             return Map.of("error", "Unknown state: " + value);
         }
-        log.error("400 Type Mismatch: {}", e.getMessage());
         return Map.of("error", e.getMessage());
     }
 
@@ -69,16 +67,13 @@ public class ErrorHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleMissingHeader(final MissingRequestHeaderException e) {
         log.error("400 Missing Header: {}", e.getMessage());
-        return Map.of("error", "Отсутствует обязательный заголовок: " + e.getHeaderName());
+        return Map.of("error", "Отсутствует заголовок: " + e.getHeaderName());
     }
 
     @ExceptionHandler(Throwable.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public Map<String, String> handleThrowable(final Throwable e) {
         log.error("500 Internal Server Error: ", e);
-        return Map.of(
-                "error", "Произошла непредвиденная ошибка",
-                "message", e.getMessage() != null ? e.getMessage() : "Нет описания"
-        );
+        return Map.of("error", "Произошла непредвиденная ошибка");
     }
 }

@@ -39,6 +39,7 @@ public class BookingServiceImpl implements BookingService {
         if (item.getOwner().getId().equals(userId)) {
             throw new NotFoundException("Владелец не может забронировать свою вещь");
         }
+
         validateDates(bookingDto);
 
         Booking booking = BookingMapper.toBooking(bookingDto);
@@ -52,24 +53,28 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public BookingDto approve(Long userId, Long bookingId, Boolean approved) {
-        Booking booking = getBooking(bookingId);
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new NotFoundException("Бронирование не найдено"));
 
         if (!booking.getItem().getOwner().getId().equals(userId)) {
-            throw new NotFoundException("Подтвердить бронирование может только владелец вещи");
+            throw new ValidationException("Подтвердить бронирование может только владелец вещи");
         }
+
         if (booking.getStatus() != BookingStatus.WAITING) {
             throw new ValidationException("Статус уже изменен");
         }
 
         booking.setStatus(approved ? BookingStatus.APPROVED : BookingStatus.REJECTED);
+
         return BookingMapper.toBookingDto(bookingRepository.save(booking));
     }
 
     @Override
     public BookingDto getById(Long userId, Long bookingId) {
-        Booking booking = getBooking(bookingId);
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new NotFoundException("Бронирование не найдено"));
 
-        if (!(booking.getBooker().getId().equals(userId) || booking.getItem().getOwner().getId().equals(userId))) {
+        if (!booking.getBooker().getId().equals(userId) && !booking.getItem().getOwner().getId().equals(userId)) {
             throw new NotFoundException("Доступ запрещен для пользователя с id=" + userId);
         }
         return BookingMapper.toBookingDto(booking);
@@ -134,7 +139,7 @@ public class BookingServiceImpl implements BookingService {
                 bookings = bookingRepository.findAllByItemOwnerIdAndStatus(userId, BookingStatus.REJECTED, sort);
                 break;
             default:
-                throw new ValidationException("Unknown state: UNSUPPORTED_STATUS");
+                throw new ValidationException("Unknown state: " + state);
         }
         return bookings.stream().map(BookingMapper::toBookingDto).collect(Collectors.toList());
     }
@@ -144,13 +149,11 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() -> new NotFoundException("Пользователь с id=" + userId + " не найден"));
     }
 
-    private Booking getBooking(Long bookingId) {
-        return bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new NotFoundException("Бронирование с id=" + bookingId + " не найдено"));
-    }
-
     private void validateDates(BookingDto dto) {
         LocalDateTime now = LocalDateTime.now();
+        if (dto.getStart() == null || dto.getEnd() == null) {
+            throw new ValidationException("Даты не могут быть пустыми");
+        }
         if (dto.getStart().isBefore(now)) {
             throw new ValidationException("Дата начала не может быть в прошлом");
         }

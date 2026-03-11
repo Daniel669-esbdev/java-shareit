@@ -19,45 +19,37 @@ public class ItemController {
 
     @PostMapping
     public ItemDto create(@RequestHeader(USER_ID_HEADER) Long userId,
-    @Valid
-    @RequestBody ItemDto itemDto) {
-        log.info("POST /items id={}", userId);
+        @Valid @RequestBody ItemDto itemDto) {
         return itemService.create(userId, itemDto);
     }
 
     @PatchMapping("/{itemId}")
     public ItemDto update(@RequestHeader(USER_ID_HEADER) Long userId,
-                          @PathVariable Long itemId,
-                          @RequestBody ItemDto itemDto) {
-        log.info("PATCH /items/{} id={}", itemId, userId);
+        @PathVariable("itemId") Long itemId,
+        @RequestBody ItemDto itemDto) {
         return itemService.update(userId, itemId, itemDto);
     }
 
     @GetMapping("/{itemId}")
     public ItemDto getById(@RequestHeader(USER_ID_HEADER) Long userId,
-    @PathVariable Long itemId) {
-        log.info("GET /items/{} id={}", itemId, userId);
+        @PathVariable("itemId") Long itemId) {
         return itemService.getById(itemId, userId);
     }
 
     @GetMapping
     public List<ItemDto> getByOwner(@RequestHeader(USER_ID_HEADER) Long userId) {
-        log.info("GET /items id={}", userId);
         return itemService.getByOwner(userId);
     }
 
     @GetMapping("/search")
-    public List<ItemDto> search(@RequestParam String text) {
-        log.info("GET /items/search?text={}", text);
+    public List<ItemDto> search(@RequestParam("text") String text) {
         return itemService.search(text);
     }
 
     @PostMapping("/{itemId}/comment")
     public CommentDto createComment(@RequestHeader(USER_ID_HEADER) Long userId,
-        @PathVariable Long itemId,
-        @Valid
-        @RequestBody CommentDto commentDto) {
-        log.info("POST /items/{}/comment id={}", itemId, userId);
+        @PathVariable("itemId") Long itemId,
+        @Valid @RequestBody CommentDto commentDto) {
         return itemService.createComment(userId, itemId, commentDto);
     }
 }

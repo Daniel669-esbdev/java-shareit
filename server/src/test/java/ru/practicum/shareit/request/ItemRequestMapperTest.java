@@ -4,6 +4,9 @@ import org.junit.jupiter.api.Test;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
 import java.time.LocalDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ItemRequestMapperTest {
 
@@ -33,5 +36,12 @@ class ItemRequestMapperTest {
 
         assertThat(entity).isNotNull();
         assertThat(entity.getDescription()).isEqualTo(dto.getDescription());
+    }
+
+    @Test
+    void testConstructor() throws NoSuchMethodException {
+        Constructor<ItemRequestMapper> constructor = ItemRequestMapper.class.getDeclaredConstructor();
+        constructor.setAccessible(true);
+        assertThrows(InvocationTargetException.class, constructor::newInstance);
     }
 }

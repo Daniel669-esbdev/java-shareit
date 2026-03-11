@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 class ShareItServerTest {
 
     @Test
-    void mainTest() {
+    void contextLoads() {
         ShareItServer server = new ShareItServer();
         assertNotNull(server);
     }

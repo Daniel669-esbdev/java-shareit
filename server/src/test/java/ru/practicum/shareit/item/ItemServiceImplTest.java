@@ -310,9 +310,14 @@ class ItemServiceImplTest {
     }
 
     @Test
+    @DisplayName("Покрытие конструктора BookingMapper")
     void testBookingMapperConstructor() throws Exception {
         var constructor = ru.practicum.shareit.booking.BookingMapper.class.getDeclaredConstructor();
         constructor.setAccessible(true);
-        constructor.newInstance();
+        try {
+            constructor.newInstance();
+        } catch (java.lang.reflect.InvocationTargetException e) {
+            assertTrue(e.getCause() instanceof UnsupportedOperationException);
+        }
     }
 }

@@ -27,6 +27,7 @@ class UtilityCoverageTest {
             Object instance = constructor.newInstance();
             assertNotNull(instance);
         } catch (Exception e) {
+            System.out.println("Constructor of " + clazz.getName() + " threw expected exception");
         }
     }
 }

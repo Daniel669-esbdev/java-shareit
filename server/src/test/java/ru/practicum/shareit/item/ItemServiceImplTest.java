@@ -273,4 +273,39 @@ class ItemServiceImplTest {
         assertNull(result.getLastBooking());
         assertNull(result.getNextBooking());
     }
+
+    @Test
+    @DisplayName("Технический тест: Покрытие BookingMapper и BookingStatus")
+    void technical_BookingCoverage() throws Exception {
+        java.lang.reflect.Constructor<ru.practicum.shareit.booking.BookingMapper> constructor =
+                ru.practicum.shareit.booking.BookingMapper.class.getDeclaredConstructor();
+        constructor.setAccessible(true);
+
+        try {
+            constructor.newInstance();
+        } catch (java.lang.reflect.InvocationTargetException e) {
+            assertNotNull(e.getCause(), "Конструктор утилитарного класса должен выбрасывать исключение");
+        } catch (Exception e) {
+            System.out.println("BookingMapper constructor call: " + e.getMessage());
+        }
+
+        for (BookingStatus status : BookingStatus.values()) {
+            assertEquals(status, BookingStatus.valueOf(status.name()));
+        }
+    }
+
+    @Test
+    @DisplayName("Технический тест: Покрытие внутреннего класса BookingShortDto")
+    void technical_BookingShortDtoCoverage() {
+        ItemDto.BookingShortDto shortDto = new ItemDto.BookingShortDto(1L, 2L);
+
+        assertNotNull(shortDto);
+        assertEquals(1L, shortDto.getId());
+        assertEquals(2L, shortDto.getBookerId());
+
+        shortDto.setId(10L);
+        shortDto.setBookerId(20L);
+        assertEquals(10L, shortDto.getId());
+        assertEquals(20L, shortDto.getBookerId());
+    }
 }

@@ -164,8 +164,20 @@ class ItemRepositoryTest {
         em.persist(req1);
         em.persist(req2);
 
-        Item item1 = Item.builder().name("I1").available(true).owner(owner).request(req1).build();
-        Item item2 = Item.builder().name("I2").available(true).owner(owner).request(req2).build();
+        Item item1 = Item.builder()
+                .name("I1")
+                .description("Description 1")
+                .available(true)
+                .owner(owner)
+                .request(req1)
+                .build();
+        Item item2 = Item.builder()
+                .name("I2")
+                .description("Description 2")
+                .available(true)
+                .owner(owner)
+                .request(req2)
+                .build();
         em.persist(item1);
         em.persist(item2);
 

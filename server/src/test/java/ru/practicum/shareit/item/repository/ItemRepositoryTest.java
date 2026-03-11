@@ -118,8 +118,12 @@ class ItemRepositoryTest {
         User owner = User.builder().name("Owner").email("owner@mail.com").build();
         em.persist(owner);
 
+        User requestor = User.builder().name("Req").email("req@mail.com").build();
+        em.persist(requestor);
+
         ru.practicum.shareit.request.ItemRequest request = ru.practicum.shareit.request.ItemRequest.builder()
                 .description("Нужна вещь")
+                .requestor(requestor)
                 .created(java.time.LocalDateTime.now())
                 .build();
         em.persist(request);
@@ -144,10 +148,19 @@ class ItemRepositoryTest {
         User owner = User.builder().name("Owner").email("owner2@mail.com").build();
         em.persist(owner);
 
+        User requestor = User.builder().name("Req2").email("req2@mail.com").build();
+        em.persist(requestor);
+
         ru.practicum.shareit.request.ItemRequest req1 = ru.practicum.shareit.request.ItemRequest.builder()
-                .description("Запрос 1").created(java.time.LocalDateTime.now()).build();
+                .description("Запрос 1")
+                .requestor(requestor)
+                .created(java.time.LocalDateTime.now())
+                .build();
         ru.practicum.shareit.request.ItemRequest req2 = ru.practicum.shareit.request.ItemRequest.builder()
-                .description("Запрос 2").created(java.time.LocalDateTime.now()).build();
+                .description("Запрос 2")
+                .requestor(requestor)
+                .created(java.time.LocalDateTime.now())
+                .build();
         em.persist(req1);
         em.persist(req2);
 

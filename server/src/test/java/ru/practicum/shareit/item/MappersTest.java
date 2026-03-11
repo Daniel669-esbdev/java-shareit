@@ -29,9 +29,9 @@ class MappersTest {
                 Object instance = constructor.newInstance();
                 assertNotNull(instance);
             } catch (InvocationTargetException e) {
-
+                System.out.println("Конструктор утилитарного класса " + clazz.getName() + " вызван через рефлексию");
             } catch (InstantiationException | IllegalAccessException e) {
-
+                System.out.println("Ошибка доступа при вызове конструктора " + clazz.getName());
             }
         }
     }

@@ -169,6 +169,7 @@ public class ItemServiceImplIntegrationTest {
 
     @Test
     void testUserMapperConstructor() throws Exception {
+        // Прямое обращение к UserMapper
         java.lang.reflect.Constructor<ru.practicum.shareit.user.UserMapper> constructor =
                 ru.practicum.shareit.user.UserMapper.class.getDeclaredConstructor();
         constructor.setAccessible(true);

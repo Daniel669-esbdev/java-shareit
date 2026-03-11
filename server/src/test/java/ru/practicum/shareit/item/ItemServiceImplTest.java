@@ -308,4 +308,11 @@ class ItemServiceImplTest {
         assertEquals(10L, shortDto.getId());
         assertEquals(20L, shortDto.getBookerId());
     }
+
+    @Test
+    void testBookingMapperConstructor() throws Exception {
+        var constructor = ru.practicum.shareit.booking.BookingMapper.class.getDeclaredConstructor();
+        constructor.setAccessible(true);
+        constructor.newInstance();
+    }
 }

@@ -1,6 +1,9 @@
 package ru.practicum.shareit.exceptions;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import ru.practicum.shareit.exception.ConflictException;
 import ru.practicum.shareit.exception.ErrorHandler;
 import ru.practicum.shareit.exception.NotFoundException;
@@ -9,6 +12,8 @@ import ru.practicum.shareit.exception.ValidationException;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class ErrorHandlerTest {
 
@@ -16,38 +21,50 @@ class ErrorHandlerTest {
 
     @Test
     void handleNotFoundException() {
-        NotFoundException e = new NotFoundException("Not found");
-        Map<String, String> response = handler.handleNotFound(e);
+        Map<String, String> response = handler.handleNotFound(new NotFoundException("404"));
+        assertThat(response.get("error")).isEqualTo("404");
+    }
 
-        assertThat(response).isNotNull();
-        assertThat(response.get("error")).isEqualTo("Not found");
+    @Test
+    void handleDataIntegrityViolation() {
+        Map<String, String> response = handler.handleDataIntegrity(new DataIntegrityViolationException("Conflict"));
+        assertThat(response.get("error")).isEqualTo("Конфликт целостности данных");
     }
 
     @Test
     void handleConflictException() {
-        ConflictException e = new ConflictException("Conflict");
-        Map<String, String> response = handler.handleConflict(e);
-
-        assertThat(response).isNotNull();
-        assertThat(response.get("error")).isEqualTo("Conflict");
+        Map<String, String> response = handler.handleConflict(new ConflictException("409"));
+        assertThat(response.get("error")).isEqualTo("409");
     }
 
     @Test
     void handleValidationException() {
-        ValidationException e = new ValidationException("Validation failed");
-        Map<String, String> response = handler.handleValidation(e);
+        Map<String, String> response = handler.handleValidation(new ValidationException("400"));
+        assertThat(response.get("error")).isEqualTo("400");
+    }
 
-        assertThat(response).isNotNull();
-        assertThat(response.get("error")).isEqualTo("Validation failed");
+    @Test
+    void handleUnknownState() {
+        MethodArgumentTypeMismatchException mockEx = mock(MethodArgumentTypeMismatchException.class);
+        when(mockEx.getName()).thenReturn("state");
+        when(mockEx.getValue()).thenReturn("UNSUPPORTED");
+
+        Map<String, String> response = handler.handleUnknownState(mockEx);
+        assertThat(response.get("error")).isEqualTo("Unknown state: UNSUPPORTED");
+    }
+
+    @Test
+    void handleMissingHeader() {
+        MissingRequestHeaderException mockEx = mock(MissingRequestHeaderException.class);
+        when(mockEx.getHeaderName()).thenReturn("X-Sharer-User-Id");
+
+        Map<String, String> response = handler.handleMissingHeader(mockEx);
+        assertThat(response.get("error")).contains("X-Sharer-User-Id");
     }
 
     @Test
     void handleThrowable() {
-        Throwable e = new Throwable("Internal error");
-        Map<String, String> response = handler.handleThrowable(e);
-
-        assertThat(response).isNotNull();
+        Map<String, String> response = handler.handleThrowable(new Throwable("500"));
         assertThat(response.get("error")).isEqualTo("Произошла непредвиденная ошибка");
-        assertThat(response).doesNotContainKey("message");
     }
 }

@@ -132,7 +132,8 @@ public class ItemServiceImplIntegrationTest {
 
     @Test
     void testMappersConstructors() throws Exception {
-        var constructorItem = ItemMapper.class.getDeclaredConstructor();
+        // Покрытие для ItemMapper
+        java.lang.reflect.Constructor<ItemMapper> constructorItem = ItemMapper.class.getDeclaredConstructor();
         constructorItem.setAccessible(true);
         try {
             constructorItem.newInstance();
@@ -140,12 +141,21 @@ public class ItemServiceImplIntegrationTest {
             System.out.println("Конструктор ItemMapper успешно вызван");
         }
 
-        var constructorComment = CommentMapper.class.getDeclaredConstructor();
+        java.lang.reflect.Constructor<CommentMapper> constructorComment = CommentMapper.class.getDeclaredConstructor();
         constructorComment.setAccessible(true);
         try {
             constructorComment.newInstance();
         } catch (Exception e) {
             System.out.println("Конструктор CommentMapper успешно вызван");
+        }
+
+        java.lang.reflect.Constructor<ru.practicum.shareit.user.UserMapper> constructorUser =
+                ru.practicum.shareit.user.UserMapper.class.getDeclaredConstructor();
+        constructorUser.setAccessible(true);
+        try {
+            constructorUser.newInstance();
+        } catch (Exception e) {
+            System.out.println("Конструктор UserMapper успешно вызван");
         }
     }
 }

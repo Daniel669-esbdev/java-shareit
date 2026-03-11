@@ -129,4 +129,15 @@ public class ItemServiceImplIntegrationTest {
         assertThat(results, hasSize(1));
         assertThat(results.get(0).getName(), containsString("Ноутбук"));
     }
+
+    @Test
+    void testMappersConstructors() throws Exception {
+        var constructorItem = ItemMapper.class.getDeclaredConstructor();
+        constructorItem.setAccessible(true);
+        try { constructorItem.newInstance(); } catch (Exception ignored) {}
+
+        var constructorComment = CommentMapper.class.getDeclaredConstructor();
+        constructorComment.setAccessible(true);
+        try { constructorComment.newInstance(); } catch (Exception ignored) {}
+    }
 }

@@ -260,4 +260,30 @@ class ItemServiceImplTest {
         when(itemRepository.findById(anyLong())).thenReturn(Optional.empty());
         assertThrows(NotFoundException.class, () -> itemService.getById(99L, 1L));
     }
+
+    @Test
+    void setBookings_WithNoBookings_ShouldNotSetLastAndNext() {
+        when(itemRepository.findById(anyLong())).thenReturn(Optional.of(item));
+        when(commentRepository.findAllByItemId(anyLong())).thenReturn(Collections.emptyList());
+        when(bookingRepository.findAllByItemIdAndStatus(anyLong(), any(), any()))
+                .thenReturn(Collections.emptyList());
+
+        ItemDto result = itemService.getById(1L, 1L);
+
+        assertNull(result.getLastBooking());
+        assertNull(result.getNextBooking());
+    }
+
+    @Test
+    void testMappersConstructors() throws Exception {
+        java.lang.reflect.Constructor<ItemMapper> constructorItem = ItemMapper.class.getDeclaredConstructor();
+        constructorItem.setAccessible(true);
+        org.junit.jupiter.api.Assertions.assertThrows(java.lang.reflect.InvocationTargetException.class,
+                constructorItem::newInstance);
+
+        java.lang.reflect.Constructor<CommentMapper> constructorComment = CommentMapper.class.getDeclaredConstructor();
+        constructorComment.setAccessible(true);
+        org.junit.jupiter.api.Assertions.assertThrows(java.lang.reflect.InvocationTargetException.class,
+                constructorComment::newInstance);
+    }
 }

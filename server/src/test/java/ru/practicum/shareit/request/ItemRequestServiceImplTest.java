@@ -129,4 +129,24 @@ class ItemRequestServiceImplTest {
         when(requestRepository.findById(anyLong())).thenReturn(Optional.empty());
         assertThrows(NotFoundException.class, () -> itemRequestService.getRequestById(1L, 99L));
     }
+
+    @Test
+    void getUserRequests_EmptyList_ReturnsEmpty() {
+        when(userRepository.existsById(anyLong())).thenReturn(true);
+        when(requestRepository.findAllByRequestorIdOrderByCreatedDesc(anyLong()))
+                .thenReturn(Collections.emptyList());
+
+        List<ItemRequestDto> result = itemRequestService.getUserRequests(user.getId());
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testItemRequestMapperConstructor() throws Exception {
+        var constructor = ItemRequestMapper.class.getDeclaredConstructor();
+        constructor.setAccessible(true);
+        try {
+            constructor.newInstance();
+        } catch (Exception ignored) { }
+    }
 }

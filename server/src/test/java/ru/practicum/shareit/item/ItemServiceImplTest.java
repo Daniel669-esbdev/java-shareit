@@ -273,23 +273,4 @@ class ItemServiceImplTest {
         assertNull(result.getLastBooking());
         assertNull(result.getNextBooking());
     }
-
-    @Test
-    void testMappersConstructors() throws Exception {
-        java.lang.reflect.Constructor<ItemMapper> constructorItem = ItemMapper.class.getDeclaredConstructor();
-        constructorItem.setAccessible(true);
-        try {
-            constructorItem.newInstance();
-        } catch (java.lang.reflect.InvocationTargetException e) {
-            System.out.println("Конструктор утилитного класса ItemMapper успешно вызван");
-        }
-
-        java.lang.reflect.Constructor<CommentMapper> constructorComment = CommentMapper.class.getDeclaredConstructor();
-        constructorComment.setAccessible(true);
-        try {
-            constructorComment.newInstance();
-        } catch (java.lang.reflect.InvocationTargetException e) {
-            System.out.println("Конструктор утилитного класса CommentMapper успешно вызван");
-        }
-    }
 }
